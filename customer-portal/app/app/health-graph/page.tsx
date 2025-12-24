@@ -4,13 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select } from "@/components/ui/select";
 import {
   LineChart,
   Line,
@@ -146,17 +140,16 @@ export default function HealthGraphPage() {
         <div className="flex gap-4 items-center mt-4">
           <div>
             <p className="text-sm text-blue-100 mb-1">利用者</p>
-            <Select value={selectedUserId} onValueChange={setSelectedUserId}>
-              <SelectTrigger className="w-64 bg-white text-gray-900 border-0">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {users.map((user) => (
-                  <SelectItem key={user.id} value={user.id}>
-                    {user.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
+            <Select
+              value={selectedUserId}
+              onChange={(e) => setSelectedUserId(e.target.value)}
+              className="w-64 bg-white text-gray-900 border-0"
+            >
+              {users.map((user) => (
+                <option key={user.id} value={user.id}>
+                  {user.name}
+                </option>
+              ))}
             </Select>
           </div>
           <div>
@@ -164,33 +157,25 @@ export default function HealthGraphPage() {
             <div className="flex gap-2">
               <Select
                 value={selectedYear.toString()}
-                onValueChange={(v) => setSelectedYear(parseInt(v))}
+                onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                className="w-28 bg-white text-gray-900 border-0"
               >
-                <SelectTrigger className="w-28 bg-white text-gray-900 border-0">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {[2023, 2024, 2025].map((year) => (
-                    <SelectItem key={year} value={year.toString()}>
-                      {year}年
-                    </SelectItem>
-                  ))}
-                </SelectContent>
+                {[2023, 2024, 2025].map((year) => (
+                  <option key={year} value={year.toString()}>
+                    {year}年
+                  </option>
+                ))}
               </Select>
               <Select
                 value={selectedMonth.toString()}
-                onValueChange={(v) => setSelectedMonth(parseInt(v))}
+                onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+                className="w-24 bg-white text-gray-900 border-0"
               >
-                <SelectTrigger className="w-24 bg-white text-gray-900 border-0">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {Array.from({ length: 12 }, (_, i) => i + 1).map((month) => (
-                    <SelectItem key={month} value={month.toString()}>
-                      {month}月
-                    </SelectItem>
-                  ))}
-                </SelectContent>
+                {Array.from({ length: 12 }, (_, i) => i + 1).map((month) => (
+                  <option key={month} value={month.toString()}>
+                    {month}月
+                  </option>
+                ))}
               </Select>
             </div>
           </div>
