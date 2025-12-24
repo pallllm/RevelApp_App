@@ -89,6 +89,14 @@ export function PlanChangeForm({
     (currentPlan === "FLEX" && targetPlan === "FOCUS") ||
     (currentPlan === "FOCUS" && targetPlan === "FLEX");
 
+  // Debug logging
+  console.log("🔍 Debug Info:", {
+    currentPlan,
+    targetPlan,
+    showUserInfo,
+    usersLength: users.length,
+  });
+
   // Check if form is valid for submission
   const isFormValid = () => {
     if (!targetPlan) return false;
