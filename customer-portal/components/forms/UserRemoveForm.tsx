@@ -47,10 +47,29 @@ const calculateEffectiveDate = () => {
   return `${year}年${month}月${date}日`;
 };
 
+// 登録済み利用者の型定義
+interface RegisteredUser {
+  id: string;
+  initials: string;
+  diagnosis?: string;
+  sheetType: "NORMAL" | "LIGHT";
+}
+
 export function UserRemoveForm({ currentPlan = "FLEX", onSubmit, onCancel }: UserRemoveFormProps) {
+  // 登録済み利用者リスト（仮データ - 実際はAPIから取得）
+  const registeredUsers: RegisteredUser[] = [
+    { id: "1", initials: "T.K", diagnosis: "ADHD", sheetType: "NORMAL" },
+    { id: "2", initials: "S.M", diagnosis: "ASD", sheetType: "NORMAL" },
+    { id: "3", initials: "H.Y", diagnosis: "発達障害", sheetType: "LIGHT" },
+    { id: "4", initials: "K.T", diagnosis: "精神障害", sheetType: "NORMAL" },
+    { id: "5", initials: "A.N", diagnosis: "ADHD、ASD", sheetType: "LIGHT" },
+  ]; // TODO: APIから取得
+
   const [step, setStep] = useState<"input" | "confirm">("input");
-  const [initials, setInitials] = useState("");
+  const [selectedUserId, setSelectedUserId] = useState("");
   const [reason, setReason] = useState("");
+
+  const selectedUser = registeredUsers.find(u => u.id === selectedUserId);
 
   const handleNext = (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,10 +77,10 @@ export function UserRemoveForm({ currentPlan = "FLEX", onSubmit, onCancel }: Use
   };
 
   const handleConfirm = () => {
-    onSubmit({ initials, reason });
+    onSubmit({ userId: selectedUserId, initials: selectedUser?.initials, reason });
   };
 
-  const currentUsers = 5; // TODO: APIから取得
+  const currentUsers = registeredUsers.length;
   const { currentPrice, newPrice } = calculateUserRemovePrice(currentPlan, currentUsers, 1);
   const effectiveDate = calculateEffectiveDate();
 
@@ -70,7 +89,7 @@ export function UserRemoveForm({ currentPlan = "FLEX", onSubmit, onCancel }: Use
       <PricingConfirmation
         currentPrice={currentPrice}
         newPrice={newPrice}
-        changeDescription={`利用者を1名削除します（イニシャル: ${initials}）`}
+        changeDescription={`利用者を1名削除します（イニシャル: ${selectedUser?.initials}）`}
         effectiveDate={effectiveDate}
         onConfirm={handleConfirm}
         onBack={() => setStep("input")}
@@ -93,15 +112,42 @@ export function UserRemoveForm({ currentPlan = "FLEX", onSubmit, onCancel }: Use
       </div>
 
       <div>
-        <label className="text-sm font-medium mb-2 block">
-          登録削除する利用者イニシャル <span className="text-red-500">*</span>
+        <label className="text-sm font-medium mb-3 block">
+          登録削除する利用者を選択 <span className="text-red-500">*</span>
         </label>
-        <Input
-          placeholder="例：T.K"
-          value={initials}
-          onChange={(e) => setInitials(e.target.value)}
-          required
-        />
+        <div className="space-y-2">
+          {registeredUsers.map((user) => (
+            <label
+              key={user.id}
+              className={`flex items-start gap-3 p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                selectedUserId === user.id
+                  ? "border-primary bg-primary/5"
+                  : "border-gray-200 hover:border-gray-300"
+              }`}
+            >
+              <input
+                type="radio"
+                name="user"
+                value={user.id}
+                checked={selectedUserId === user.id}
+                onChange={(e) => setSelectedUserId(e.target.value)}
+                className="mt-1"
+                required
+              />
+              <div className="flex-1">
+                <div className="font-semibold">{user.initials}</div>
+                <div className="text-sm text-muted-foreground mt-1">
+                  {user.diagnosis && `疾患名: ${user.diagnosis}`}
+                  {user.diagnosis && " / "}
+                  シート: {user.sheetType === "NORMAL" ? "通常版" : "簡易版"}
+                </div>
+              </div>
+            </label>
+          ))}
+        </div>
+        <p className="text-xs text-muted-foreground mt-2">
+          現在登録されている利用者: {registeredUsers.length}名
+        </p>
       </div>
 
       <div>

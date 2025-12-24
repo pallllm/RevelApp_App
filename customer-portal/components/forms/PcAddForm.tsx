@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { VideoGuide } from "@/components/ui/video-guide";
 import { AlertCircle, ArrowRight } from "lucide-react";
 import { PricingConfirmation } from "./PricingConfirmation";
 import { Plan } from "@/lib/constants";
@@ -90,6 +91,13 @@ export function PcAddForm({ currentPlan = "FLEX", onSubmit, onCancel }: PcAddFor
         </div>
       </div>
 
+      {/* AnyDesk説明動画 */}
+      <VideoGuide
+        title="AnyDesk接続先アドレスの確認方法"
+        description="以下の動画で、AnyDesk接続先アドレスの確認手順をご確認ください"
+        youtubeId=""
+      />
+
       <div>
         <label className="text-sm font-medium mb-2 block">
           【新しいPC】AnyDesk接続先アドレス <span className="text-red-500">*</span>
@@ -101,6 +109,9 @@ export function PcAddForm({ currentPlan = "FLEX", onSubmit, onCancel }: PcAddFor
           pattern="[0-9]{9,10}"
           required
         />
+        <p className="text-xs text-muted-foreground mt-1">
+          上記の動画を参考に、AnyDeskアプリケーションに表示されているIDをご入力ください
+        </p>
       </div>
 
       <div>

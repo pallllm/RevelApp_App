@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { VideoGuide } from "@/components/ui/video-guide";
 import { Send, AlertCircle } from "lucide-react";
 
 interface PcChangeFormProps {
@@ -22,20 +23,48 @@ export function PcChangeForm({ onSubmit, onCancel }: PcChangeFormProps) {
     <form onSubmit={(e) => { e.preventDefault(); onSubmit({ currentAnydeskId, newAnydeskId, anydeskPassword, pinPassword, preferredDate1, preferredDate2 }); }} className="space-y-6">
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
         <div className="flex gap-3">
-          <AlertCircle className="h-5 w-5 text-blue-600" />
+          <AlertCircle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
           <div className="text-sm text-blue-900">
-            <p className="font-semibold">PC変更作業について</p>
-            <p className="mt-1">作業希望日は翌々営業日以降で、施設営業時間外（営業終了〜翌営業開始）にリモート設定を行います</p>
+            <p className="font-semibold mb-1">PC変更作業について</p>
+            <p>作業希望日は翌々営業日以降で、施設営業時間外（営業終了〜翌営業開始）にリモート設定を行います</p>
           </div>
         </div>
       </div>
+
+      {/* AnyDesk説明動画 */}
+      <VideoGuide
+        title="AnyDesk接続先アドレスの確認方法"
+        description="以下の動画で、AnyDesk接続先アドレスの確認手順をご確認ください"
+        youtubeId=""
+      />
+
       <div>
-        <label className="text-sm font-medium mb-2 block">【現在のPC】AnyDesk接続先アドレス <span className="text-red-500">*</span></label>
-        <Input placeholder="9〜10桁の数字" value={currentAnydeskId} onChange={(e) => setCurrentAnydeskId(e.target.value)} required />
+        <label className="text-sm font-medium mb-2 block">
+          【現在のPC】AnyDesk接続先アドレス <span className="text-red-500">*</span>
+        </label>
+        <Input
+          placeholder="9〜10桁の数字（スペースなし）"
+          value={currentAnydeskId}
+          onChange={(e) => setCurrentAnydeskId(e.target.value)}
+          pattern="[0-9]{9,10}"
+          required
+        />
       </div>
+
       <div>
-        <label className="text-sm font-medium mb-2 block">【新しいPC】AnyDesk接続先アドレス <span className="text-red-500">*</span></label>
-        <Input placeholder="9〜10桁の数字" value={newAnydeskId} onChange={(e) => setNewAnydeskId(e.target.value)} required />
+        <label className="text-sm font-medium mb-2 block">
+          【新しいPC】AnyDesk接続先アドレス <span className="text-red-500">*</span>
+        </label>
+        <Input
+          placeholder="9〜10桁の数字（スペースなし）"
+          value={newAnydeskId}
+          onChange={(e) => setNewAnydeskId(e.target.value)}
+          pattern="[0-9]{9,10}"
+          required
+        />
+        <p className="text-xs text-muted-foreground mt-1">
+          上記の動画を参考に、両方のPCのAnyDeskアプリケーションに表示されているIDをご入力ください
+        </p>
       </div>
       <div>
         <label className="text-sm font-medium mb-2 block">AnyDesk接続先パスワード <span className="text-red-500">*</span></label>
