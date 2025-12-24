@@ -144,22 +144,24 @@ export default function HomePage() {
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">ホーム</h1>
-        <p className="text-muted-foreground">
+      <div className="mb-8">
+        <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+          ホーム
+        </h1>
+        <p className="text-muted-foreground mt-2">
           施設の運営状況を一目で確認できます
         </p>
       </div>
 
       {/* Announcements Block */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+      <Card className="shadow-lg border-0">
+        <CardHeader className="border-b bg-gradient-to-r from-purple-50 to-blue-50">
+          <CardTitle className="flex items-center gap-2 text-purple-900">
             <Bell className="h-5 w-5 text-purple-600" />
             お知らせ
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-4">
           <div className="space-y-2">
             {announcements.map((announcement) => (
               <div key={announcement.id}>
@@ -232,7 +234,7 @@ export default function HomePage() {
         />
 
         {/* Center: Current Plan */}
-        <Card>
+        <Card className="shadow-lg border-0">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -249,7 +251,7 @@ export default function HomePage() {
         </Card>
 
         {/* Right: Next Action */}
-        <Card className="border-orange-200 bg-orange-50/50">
+        <Card className="shadow-lg border-0 bg-gradient-to-br from-orange-50 to-red-50">
           <CardContent className="pt-6">
             <div className="flex items-center gap-2 mb-2">
               <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center">
@@ -272,14 +274,14 @@ export default function HomePage() {
       {/* Main Information Area (2 Columns) */}
       <div className="grid gap-4 md:grid-cols-2">
         {/* Left: Continuation Period & Wage Phase */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+        <Card className="shadow-lg border-0">
+          <CardHeader className="border-b bg-gradient-to-r from-blue-50 to-cyan-50">
+            <CardTitle className="flex items-center gap-2 text-blue-900">
               <TrendingUp className="h-5 w-5 text-blue-600" />
               継続期間と工賃フェーズ
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             <div className="space-y-4">
               {/* Current status */}
               <div className="text-center mb-6">
@@ -329,21 +331,51 @@ export default function HomePage() {
         </Card>
 
         {/* Right: Calendar */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <CalendarIcon className="h-5 w-5 text-purple-600" />
-              {currentYear}年{currentMonth}月のカレンダー
-            </CardTitle>
+        <Card className="shadow-lg border-0">
+          <CardHeader className="border-b bg-gradient-to-r from-purple-50 to-indigo-50">
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2 text-purple-900">
+                <CalendarIcon className="h-5 w-5 text-purple-600" />
+                カレンダー
+              </CardTitle>
+              <div className="flex items-center gap-2">
+                <button className="px-3 py-1 text-sm rounded-md bg-purple-600 text-white font-medium">
+                  Month
+                </button>
+                <button className="px-3 py-1 text-sm rounded-md hover:bg-purple-100 text-gray-600">
+                  Week
+                </button>
+                <button className="px-3 py-1 text-sm rounded-md hover:bg-purple-100 text-gray-600">
+                  Year
+                </button>
+              </div>
+            </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
+            {/* Month/Year header */}
+            <div className="flex items-center justify-between mb-6">
+              <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              <h3 className="text-lg font-bold text-gray-900">
+                {currentYear}年{currentMonth}月
+              </h3>
+              <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
+
             {/* Weekday headers */}
-            <div className="grid grid-cols-7 gap-1 mb-2">
-              {["日", "月", "火", "水", "木", "金", "土"].map((day, i) => (
+            <div className="grid grid-cols-7 gap-2 mb-2">
+              {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day, i) => (
                 <div
                   key={day}
-                  className={`text-center text-sm font-semibold py-2 ${
-                    i === 0 ? "text-red-600" : i === 6 ? "text-blue-600" : "text-gray-700"
+                  className={`text-center text-xs font-semibold py-2 ${
+                    i === 0 ? "text-red-500" : i === 6 ? "text-blue-500" : "text-gray-500"
                   }`}
                 >
                   {day}
@@ -352,7 +384,7 @@ export default function HomePage() {
             </div>
 
             {/* Calendar days */}
-            <div className="grid grid-cols-7 gap-1">
+            <div className="grid grid-cols-7 gap-2">
               {calendarDays.map((day, index) => {
                 const dateInfo = day ? getDateInfo(day) : null;
                 const isToday = day === today;
@@ -360,29 +392,21 @@ export default function HomePage() {
                 return (
                   <div
                     key={index}
-                    className={`aspect-square flex flex-col items-center justify-center p-1 rounded-lg text-sm relative ${
+                    className={`aspect-square flex flex-col items-center justify-center rounded-xl text-sm relative transition-all ${
                       !day
                         ? ""
                         : isToday
-                        ? "bg-primary text-white font-bold"
+                        ? "bg-purple-600 text-white font-bold shadow-lg scale-105"
                         : dateInfo
-                        ? "bg-gradient-to-br from-orange-100 to-orange-200 font-semibold cursor-pointer hover:shadow-md transition-shadow"
-                        : "hover:bg-gray-100"
+                        ? "bg-gradient-to-br from-orange-400 to-red-400 text-white font-semibold cursor-pointer hover:scale-105 shadow-md"
+                        : "hover:bg-gray-100 cursor-pointer"
                     }`}
                   >
                     {day && (
                       <>
-                        <span className={isToday ? "text-white" : ""}>{day}</span>
+                        <span className={isToday || dateInfo ? "text-white" : "text-gray-700"}>{day}</span>
                         {dateInfo && !isToday && (
-                          <div
-                            className={`absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-1 rounded-full ${
-                              dateInfo.type === "deadline"
-                                ? "bg-red-500"
-                                : dateInfo.type === "billing"
-                                ? "bg-green-500"
-                                : "bg-blue-500"
-                            }`}
-                          />
+                          <div className="absolute bottom-1 w-1 h-1 rounded-full bg-white" />
                         )}
                       </>
                     )}
@@ -392,21 +416,14 @@ export default function HomePage() {
             </div>
 
             {/* Legend */}
-            <div className="mt-4 space-y-2">
+            <div className="mt-6 space-y-2 pt-4 border-t">
+              <p className="text-xs font-semibold text-gray-600 mb-3">重要な日程</p>
               {importantDates.map((item, index) => (
-                <div key={index} className="flex items-center gap-2 text-xs">
-                  <div
-                    className={`w-3 h-3 rounded ${
-                      item.type === "deadline"
-                        ? "bg-red-500"
-                        : item.type === "billing"
-                        ? "bg-green-500"
-                        : "bg-blue-500"
-                    }`}
-                  />
-                  <span>
-                    {item.date}日: {item.title}
-                  </span>
+                <div key={index} className="flex items-center gap-3 text-sm p-2 rounded-lg hover:bg-gray-50 transition-colors">
+                  <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-gradient-to-br from-orange-400 to-red-400 flex items-center justify-center text-white font-bold text-xs">
+                    {item.date}
+                  </div>
+                  <span className="text-gray-700">{item.title}</span>
                 </div>
               ))}
             </div>
@@ -415,10 +432,10 @@ export default function HomePage() {
       </div>
 
       {/* Expansion Free Space (Future Features) */}
-      <Card className="border-dashed border-2 border-gray-300">
+      <Card className="border-dashed border-2 border-purple-200 bg-white/50 shadow-sm">
         <CardContent className="pt-6">
           <div className="text-center text-muted-foreground py-8">
-            <p className="text-sm">今後の機能追加エリア</p>
+            <p className="text-sm font-medium">今後の機能追加エリア</p>
             <p className="text-xs mt-1">
               利用上限アラート・未対応タスク・最近の変更申請などを表示予定
             </p>
