@@ -230,6 +230,15 @@ export function PlanChangeForm({
         </div>
       )}
 
+      {/* DEBUG: Show showUserInfo value */}
+      <div className="p-4 bg-yellow-100 border-2 border-yellow-500 rounded">
+        <strong>DEBUG:</strong> showUserInfo = {String(showUserInfo)}
+        <br />
+        targetPlan = {targetPlan || "null"}
+        <br />
+        currentPlan = {currentPlan}
+      </div>
+
       {/* User Count (for Flex and Focus) */}
       {showUserInfo && (
         <div>
