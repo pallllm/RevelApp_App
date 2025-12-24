@@ -1,0 +1,332 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// 事業所・ユーザー管理
+// ============================================
+
+model Facility {
+  id                String   @id @default(uuid())
+  name              String
+  planType          PlanType
+  address           String?
+  phone             String?
+  email             String?
+  bankName          String?
+  bankBranch        String?
+  bankAccountType   BankAccountType?
+  bankAccountNumber String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  users            User[]
+  facilityGames    FacilityGame[]
+  monthlyWages     MonthlyWage[]
+  wageCarryovers   WageCarryover[]
+  changeRequests   ChangeRequest[]
+
+  @@map("facilities")
+}
+
+model User {
+  id                 String     @id @default(uuid())
+  facilityId         String
+  wordpressUserId    Int?       @unique // WordPress User ID
+  role               UserRole
+  email              String     @unique
+  name               String
+  initials           String?
+  status             UserStatus @default(ACTIVE)
+  startDate          DateTime?
+  cancellationDate   DateTime?
+  continuationMonths Int        @default(0)
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+
+  // Relations
+  facility             Facility               @relation(fields: [facilityId], references: [id])
+  memberGames          MemberGame[]
+  gamePlayRecords      GamePlayRecord[]
+  healthRecords        HealthRecord[]
+  memberMonthlyWages   MemberMonthlyWage[]
+  changeRequests       ChangeRequest[]       @relation("Requester")
+  processedRequests    ChangeRequest[]       @relation("Processor")
+  notificationReads    NotificationRead[]
+
+  @@map("users")
+}
+
+// ============================================
+// ゲーム管理
+// ============================================
+
+model Game {
+  id              String   @id // e.g., 'ikaruga-lv1'
+  name            String
+  level           Int
+  requiresAnydesk Boolean  @default(false)
+  imageUrl        String?
+  manualUrl       String?
+  videoUrl        String?
+  description     String?
+  createdAt       DateTime @default(now())
+
+  // Relations
+  facilityGames   FacilityGame[]
+  memberGames     MemberGame[]
+  gamePlayRecords GamePlayRecord[]
+
+  @@map("games")
+}
+
+model FacilityGame {
+  id         String   @id @default(uuid())
+  facilityId String
+  gameId     String
+  isBackup   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  // Relations
+  facility Facility @relation(fields: [facilityId], references: [id])
+  game     Game     @relation(fields: [gameId], references: [id])
+
+  @@unique([facilityId, gameId])
+  @@map("facility_games")
+}
+
+model MemberGame {
+  id        String   @id @default(uuid())
+  userId    String
+  gameId    String
+  createdAt DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id])
+  game Game @relation(fields: [gameId], references: [id])
+
+  @@unique([userId, gameId])
+  @@map("member_games")
+}
+
+model GamePlayRecord {
+  id              String   @id @default(uuid())
+  userId          String
+  gameId          String
+  playedAt        DateTime
+  sessionDuration Int? // 分
+  notes           String?
+  createdAt       DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id])
+  game Game @relation(fields: [gameId], references: [id])
+
+  @@map("game_play_records")
+}
+
+// ============================================
+// 体調・行動記録
+// ============================================
+
+model HealthRecord {
+  id                 String    @id @default(uuid())
+  userId             String
+  recordDate         DateTime  @db.Date
+  fatigueLevel       Int? // 0-100
+  sleepHours         Float?
+  mood               String? // 'とても良い', '良い', '普通', '悪い', 'とても悪い'
+  emotions           Json? // ['楽しい', '嬉しい', etc.]
+  weather            String? // 'sunny', 'cloudy', 'rainy', 'snowy'
+  temperature        Float?
+  hasPressureChange  Boolean   @default(false)
+  achievedTasks      String? // できたこと
+  difficultTasks     String? // 難しかったこと
+  freeNotes          String? // 自由記述
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, recordDate])
+  @@map("health_records")
+}
+
+// ============================================
+// 工賃・報酬管理
+// ============================================
+
+model WagePhase {
+  id          String   @id @default(uuid())
+  phaseName   String // '0〜3ヶ月', '4〜9ヶ月', '9ヶ月以上'
+  minMonths   Int
+  maxMonths   Int? // NULL = 上限なし
+  level1Wage  Int
+  level2Wage  Int
+  level3Wage  Int
+  level4Wage  Int
+  colorFrom   String?
+  colorTo     String?
+  textColor   String?
+  createdAt   DateTime @default(now())
+
+  @@map("wage_phases")
+}
+
+model MonthlyWage {
+  id          String     @id @default(uuid())
+  facilityId  String
+  year        Int
+  month       Int
+  totalAmount Int
+  memberCount Int
+  status      WageStatus @default(CALCULATING)
+  paymentDate DateTime?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  // Relations
+  facility           Facility            @relation(fields: [facilityId], references: [id])
+  memberMonthlyWages MemberMonthlyWage[]
+
+  @@unique([facilityId, year, month])
+  @@map("monthly_wages")
+}
+
+model MemberMonthlyWage {
+  id             String   @id @default(uuid())
+  monthlyWageId  String
+  userId         String
+  amount         Int
+  playCount      Int
+  createdAt      DateTime @default(now())
+
+  // Relations
+  monthlyWage MonthlyWage @relation(fields: [monthlyWageId], references: [id])
+  user        User        @relation(fields: [userId], references: [id])
+
+  @@unique([monthlyWageId, userId])
+  @@map("member_monthly_wages")
+}
+
+model WageCarryover {
+  id         String   @id @default(uuid())
+  facilityId String
+  year       Int
+  month      Int
+  amount     Int
+  createdAt  DateTime @default(now())
+
+  // Relations
+  facility Facility @relation(fields: [facilityId], references: [id])
+
+  @@unique([facilityId, year, month])
+  @@map("wage_carryovers")
+}
+
+// ============================================
+// 変更申請
+// ============================================
+
+model ChangeRequest {
+  id            String        @id @default(uuid())
+  facilityId    String
+  requesterId   String
+  requestType   String // 'facility_info', 'plan_change', 'member_add', etc.
+  status        RequestStatus @default(PENDING)
+  requestData   Json // リクエスト内容
+  notes         String?
+  submittedAt   DateTime      @default(now())
+  processedAt   DateTime?
+  processedBy   String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  // Relations
+  facility  Facility                   @relation(fields: [facilityId], references: [id])
+  requester User                       @relation("Requester", fields: [requesterId], references: [id])
+  processor User?                      @relation("Processor", fields: [processedBy], references: [id])
+  documents ChangeRequestDocument[]
+
+  @@map("change_requests")
+}
+
+model ChangeRequestDocument {
+  id              String   @id @default(uuid())
+  changeRequestId String
+  fileName        String
+  fileUrl         String
+  fileSize        BigInt?
+  mimeType        String?
+  uploadedAt      DateTime @default(now())
+
+  // Relations
+  changeRequest ChangeRequest @relation(fields: [changeRequestId], references: [id])
+
+  @@map("change_request_documents")
+}
+
+// ============================================
+// お知らせ（WordPressから取得するため、テーブル不要）
+// ============================================
+
+model NotificationRead {
+  id                  String   @id @default(uuid())
+  wordpressPostId     Int // WordPress Post ID
+  userId              String
+  readAt              DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([wordpressPostId, userId])
+  @@map("notification_reads")
+}
+
+// ============================================
+// Enums
+// ============================================
+
+enum PlanType {
+  FOCUS
+  ENTRY
+  FLEXIBLE
+}
+
+enum BankAccountType {
+  REGULAR // 普通
+  CHECKING // 当座
+}
+
+enum UserRole {
+  ADMIN
+  STAFF
+  MEMBER
+}
+
+enum UserStatus {
+  ACTIVE
+  CANCELLED
+}
+
+enum WageStatus {
+  CALCULATING
+  CONFIRMED
+  PAID
+}
+
+enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
