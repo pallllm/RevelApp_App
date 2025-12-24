@@ -408,7 +408,7 @@ export default function HomePage() {
                       <button
                         className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium transition-all ${
                           isTodayDate
-                            ? "bg-gradient-to-br from-purple-500 to-pink-500 text-white shadow-lg"
+                            ? "bg-gradient-to-br from-blue-500 to-cyan-500 text-white shadow-lg ring-2 ring-blue-300"
                             : dateInfo
                             ? "bg-gradient-to-br from-purple-400 to-pink-400 text-white shadow-md hover:shadow-lg"
                             : "text-gray-700 hover:bg-gray-100"
