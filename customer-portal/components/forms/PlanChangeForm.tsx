@@ -99,18 +99,31 @@ export function PlanChangeForm({
 
   // Check if form is valid for submission
   const isFormValid = () => {
-    if (!targetPlan) return false;
+    if (!targetPlan) {
+      console.log("❌ Invalid: No target plan");
+      return false;
+    }
 
     // Entry/Flex plan validation
     if (targetPlan === "ENTRY" || targetPlan === "FLEX") {
-      if (selectedGames.length !== getMaxGames()) return false;
-      if (!backupGame) return false;
+      if (selectedGames.length !== getMaxGames()) {
+        console.log("❌ Invalid: Wrong number of games");
+        return false;
+      }
+      if (!backupGame) {
+        console.log("❌ Invalid: No backup game");
+        return false;
+      }
     }
 
     // User info validation (if required)
     if (showUserInfo) {
+      console.log("🔍 Validating user info, users.length:", users.length);
       // If user info is required, must have selected user count
-      if (users.length === 0) return false;
+      if (users.length === 0) {
+        console.log("❌ Invalid: No users selected");
+        return false;
+      }
 
       for (const user of users) {
         // Common fields for both Focus and Flex
@@ -124,6 +137,7 @@ export function PlanChangeForm({
       }
     }
 
+    console.log("✅ Form is valid");
     return true;
   };
 
@@ -219,6 +233,7 @@ export function PlanChangeForm({
       {/* User Count (for Flex and Focus) */}
       {showUserInfo && (
         <div>
+          {console.log("✅ Rendering user count section")}
           <label className="text-sm font-medium mb-2 block">
             利用者人数 <span className="text-red-500">*</span>
           </label>
