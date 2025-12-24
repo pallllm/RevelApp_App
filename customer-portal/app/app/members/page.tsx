@@ -22,12 +22,14 @@ const currentPlan: PlanType = "flexible"; // "focus", "entry", "flexible"
 
 // 施設が選択しているゲーム（エントリー・フレキシブルの場合）
 // TODO: 本番環境ではAPIから取得
-const facilityGameId = "mcheroes"; // GAMESのidを指定
-const facilityGame = GAMES.find((g) => g.id === facilityGameId) || GAMES[0];
-const facilityGameLinks = {
-  manualUrl: `/manuals/${facilityGameId}`,
-  videoUrl: `/videos/${facilityGameId}-tutorial`,
-};
+// Flexibleの場合: 5ゲーム + 予備1ゲーム
+// Entryの場合: 3ゲーム + 予備1ゲーム
+const facilitySelectedGameIds = ["gesoten", "elf1", "mcheroes", "axie-tri", "elf2"]; // 5 games for Flexible
+const facilityBackupGameId = "cryptospells"; // 1 backup game
+const facilitySelectedGames = facilitySelectedGameIds
+  .map((id) => GAMES.find((g) => g.id === id))
+  .filter(Boolean);
+const facilityBackupGame = GAMES.find((g) => g.id === facilityBackupGameId);
 
 // Sample data
 const members = [
@@ -102,47 +104,93 @@ export default function MembersPage() {
               事業所選択ゲーム
             </CardTitle>
           </CardHeader>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="relative w-28 h-20 rounded-xl overflow-hidden shadow-lg bg-gray-100">
-                  <Image
-                    src={facilityGame.image}
-                    alt={facilityGame.name}
-                    fill
-                    className="object-cover"
-                  />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-gray-800">
-                    {facilityGame.name}
-                  </h3>
-                  <p className="text-sm text-gray-600 mt-1">
-                    全利用者が使用するゲーム・Lv.{facilityGame.level}
-                  </p>
+          <CardContent className="pt-6 space-y-6">
+            {/* Main Games */}
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-semibold text-gray-700">
+                  メインゲーム（{facilitySelectedGames.length}個）
+                </h3>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2 border-blue-300 hover:bg-blue-50 text-xs"
+                    onClick={() => window.open("/manuals/all", "_blank")}
+                  >
+                    <BookOpen className="h-3 w-3" />
+                    全マニュアル
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2 border-purple-300 hover:bg-purple-50 text-xs"
+                    onClick={() => window.open("/videos/all", "_blank")}
+                  >
+                    <Video className="h-3 w-3" />
+                    全動画
+                  </Button>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
-                <Button
-                  variant="outline"
-                  className="gap-2 border-blue-300 hover:bg-blue-50"
-                  onClick={() => window.open(facilityGameLinks.manualUrl, "_blank")}
-                >
-                  <BookOpen className="h-4 w-4" />
-                  マニュアル
-                  <ExternalLink className="h-3 w-3" />
-                </Button>
-                <Button
-                  variant="outline"
-                  className="gap-2 border-purple-300 hover:bg-purple-50"
-                  onClick={() => window.open(facilityGameLinks.videoUrl, "_blank")}
-                >
-                  <Video className="h-4 w-4" />
-                  プレイ動画
-                  <ExternalLink className="h-3 w-3" />
-                </Button>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+                {facilitySelectedGames.map((game) => (
+                  <div
+                    key={game!.id}
+                    className="p-3 border-2 border-blue-200 bg-white rounded-lg"
+                  >
+                    <div className="space-y-2">
+                      <div className="relative w-full aspect-video rounded-md overflow-hidden bg-gray-100">
+                        <Image
+                          src={game!.image}
+                          alt={game!.name}
+                          fill
+                          className="object-cover"
+                        />
+                      </div>
+                      <div className="font-semibold text-sm">{game!.name}</div>
+                      <div className="text-xs text-muted-foreground">
+                        Lv.{game!.level}
+                        {game!.requiresAnyDesk && " *"}
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
+
+            {/* Backup Game */}
+            {facilityBackupGame && (
+              <div>
+                <h3 className="text-sm font-semibold text-gray-700 mb-3">
+                  予備ゲーム（1個）
+                </h3>
+                <div className="w-full md:w-1/3 lg:w-1/5">
+                  <div className="p-3 border-2 border-orange-200 bg-orange-50/50 rounded-lg">
+                    <div className="space-y-2">
+                      <div className="relative w-full aspect-video rounded-md overflow-hidden bg-gray-100">
+                        <Image
+                          src={facilityBackupGame.image}
+                          alt={facilityBackupGame.name}
+                          fill
+                          className="object-cover"
+                        />
+                      </div>
+                      <div className="font-semibold text-sm">
+                        {facilityBackupGame.name}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        Lv.{facilityBackupGame.level}
+                        {facilityBackupGame.requiresAnyDesk && " *"}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <p className="text-xs text-muted-foreground">
+              * 印のゲームはAnyDeskによる環境変更作業が必要です
+            </p>
           </CardContent>
         </Card>
       )}
