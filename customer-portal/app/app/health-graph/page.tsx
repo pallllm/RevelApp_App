@@ -8,9 +8,6 @@ import {
   Line,
   BarChart,
   Bar,
-  PieChart,
-  Pie,
-  Cell,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -20,14 +17,13 @@ import {
   ComposedChart,
 } from "recharts";
 import {
-  Calendar as CalendarIcon,
   Cloud,
   CloudRain,
   Sun,
   CloudSnow,
-  Medal,
-  TrendingUp,
   Gamepad2,
+  TrendingUp,
+  TrendingDown,
 } from "lucide-react";
 
 // Sample data - 1ヶ月分のデータ
@@ -36,20 +32,23 @@ const dailyHealthData = Array.from({ length: 31 }, (_, i) => {
   return {
     day,
     fatigue: Math.floor(Math.random() * 40) + 30, // 30-70%
-    sleepHours: (Math.random() * 3 + 5).toFixed(1), // 5.0-8.0時間
-    temperature: (Math.random() * 10 + 15).toFixed(1), // 15-25度
+    sleepHours: parseFloat((Math.random() * 3 + 5).toFixed(1)), // 5.0-8.0時間
+    temperature: parseFloat((Math.random() * 10 + 15).toFixed(1)), // 15-25度
     pressure: Math.floor(Math.random() * 30) + 1000, // 1000-1030hPa
     weather: ["sunny", "cloudy", "rainy", "snow"][Math.floor(Math.random() * 4)],
   };
 });
 
-// 気分・感情データ（円グラフ用）
-const emotionData = [
-  { name: "とても良い", value: 12, color: "#22c55e" },
-  { name: "良い", value: 10, color: "#3b82f6" },
-  { name: "普通", value: 6, color: "#f59e0b" },
-  { name: "悪い", value: 2, color: "#ef4444" },
-  { name: "とても悪い", value: 1, color: "#991b1b" },
+// プレイしたゲーム（メダル表示用）
+const playedGames = [
+  { id: "gesoten", name: "ゲソテンバース", playCount: 50, isRecent: true },
+  { id: "mcheroes", name: "マイクリプトヒーローズ", playCount: 73, isRecent: true },
+  { id: "elf1", name: "エルフの森 Lv1", playCount: 23, isRecent: true },
+  { id: "axie-tri", name: "Axie トライフォース", playCount: 16, isRecent: false },
+  { id: "xeno", name: "XENO", playCount: 12, isRecent: true },
+  { id: "elf2", name: "エルフの森 Lv2", playCount: 8, isRecent: false },
+  { id: "axie-quest", name: "Axie クエスト", playCount: 6, isRecent: false },
+  { id: "cryptospells", name: "クリプトスペルズ", playCount: 4, isRecent: false },
 ];
 
 // 記録がある日（カレンダー用）
@@ -78,18 +77,18 @@ const records = [
 ];
 
 // 天気アイコンを取得
-const getWeatherIcon = (weather: string) => {
+const getWeatherIcon = (weather: string, size: string = "h-4 w-4") => {
   switch (weather) {
     case "sunny":
-      return <Sun className="h-4 w-4 text-yellow-500" />;
+      return <Sun className={`${size} text-yellow-500`} />;
     case "cloudy":
-      return <Cloud className="h-4 w-4 text-gray-500" />;
+      return <Cloud className={`${size} text-gray-500`} />;
     case "rainy":
-      return <CloudRain className="h-4 w-4 text-blue-500" />;
+      return <CloudRain className={`${size} text-blue-500`} />;
     case "snow":
-      return <CloudSnow className="h-4 w-4 text-blue-300" />;
+      return <CloudSnow className={`${size} text-blue-300`} />;
     default:
-      return <Sun className="h-4 w-4" />;
+      return <Sun className={size} />;
   }
 };
 
@@ -152,145 +151,175 @@ export default function HealthGraphPage() {
         </p>
       </div>
 
-      {/* サマリーカード */}
-      <div className="grid gap-4 md:grid-cols-3">
-        {/* 累計プレイ回数 */}
-        <Card className="shadow-lg border-0 bg-gradient-to-br from-yellow-50 to-orange-50">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-yellow-500 to-orange-500 flex items-center justify-center">
-                  <Gamepad2 className="h-5 w-5 text-white" />
+      {/* 3カラムレイアウト：左（サマリー）、中央（ゲーム一覧）、右（カレンダー+コメント） */}
+      <div className="grid gap-4 md:grid-cols-12">
+        {/* 左カラム：サマリー指標 */}
+        <div className="md:col-span-3 space-y-4">
+          {/* 累計プレイ回数 */}
+          <Card className="shadow-lg border-0 bg-gradient-to-br from-yellow-50 to-orange-50">
+            <CardContent className="pt-6 pb-6">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-yellow-500 to-orange-500 flex items-center justify-center shadow-md">
+                  <Gamepad2 className="h-6 w-6 text-white" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">累計プレイ回数</p>
-                  <p className="text-2xl font-bold">230回</p>
+                  <p className="text-xs text-gray-600 mb-0.5">累計プレイ回数</p>
+                  <p className="text-3xl font-bold text-gray-800">230回</p>
                 </div>
               </div>
-              <Badge className="bg-green-500">+14回</Badge>
-            </div>
-          </CardContent>
-        </Card>
+              <div className="flex items-center gap-2 pt-2 border-t border-orange-200">
+                <TrendingUp className="h-4 w-4 text-green-600" />
+                <span className="text-sm font-semibold text-green-700">+14回</span>
+                <span className="text-xs text-gray-600">先月比</span>
+              </div>
+            </CardContent>
+          </Card>
 
-        {/* 平均睡眠時間 */}
-        <Card className="shadow-lg border-0 bg-gradient-to-br from-purple-50 to-blue-50">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center">
-                  <Cloud className="h-5 w-5 text-white" />
+          {/* 平均睡眠時間 */}
+          <Card className="shadow-lg border-0 bg-gradient-to-br from-purple-50 to-blue-50">
+            <CardContent className="pt-6 pb-6">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center shadow-md">
+                  <Cloud className="h-6 w-6 text-white" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">平均睡眠時間</p>
-                  <p className="text-2xl font-bold">6.2時間</p>
+                  <p className="text-xs text-gray-600 mb-0.5">平均睡眠時間</p>
+                  <p className="text-3xl font-bold text-gray-800">6.2時間</p>
                 </div>
               </div>
-              <Badge variant="destructive">-0.5時間</Badge>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* メダル */}
-        <Card className="shadow-lg border-0 bg-gradient-to-br from-pink-50 to-purple-50">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-pink-500 to-purple-500 flex items-center justify-center">
-                  <Medal className="h-5 w-5 text-white" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">現在のランク</p>
-                  <p className="text-2xl font-bold">ゴールド</p>
-                </div>
+              <div className="flex items-center gap-2 pt-2 border-t border-purple-200">
+                <TrendingDown className="h-4 w-4 text-red-500" />
+                <span className="text-sm font-semibold text-red-600">-0.5時間</span>
+                <span className="text-xs text-gray-600">先月比</span>
               </div>
-              <div className="text-4xl">🥇</div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+            </CardContent>
+          </Card>
+        </div>
 
-      {/* カレンダーと気分円グラフ */}
-      <div className="grid gap-4 md:grid-cols-2">
-        {/* カレンダー */}
-        <Card className="shadow-lg border-0">
-          <CardHeader className="border-b bg-gradient-to-r from-purple-50 to-blue-50">
-            <CardTitle className="text-purple-900">記録カレンダー</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-6">
-            {/* Month/Year header */}
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold text-gray-800">
-                {selectedYear}年{selectedMonth}月
-              </h3>
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={handlePreviousMonth}
-                  className="p-1.5 hover:bg-purple-100 rounded-full transition-colors"
-                >
-                  <svg
-                    className="w-4 h-4 text-purple-600"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M15 19l-7-7 7-7"
-                    />
-                  </svg>
-                </button>
-                <button
-                  onClick={handleNextMonth}
-                  className="p-1.5 hover:bg-purple-100 rounded-full transition-colors"
-                >
-                  <svg
-                    className="w-4 h-4 text-purple-600"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 5l7 7-7 7"
-                    />
-                  </svg>
-                </button>
-              </div>
-            </div>
-
-            {/* Weekday headers */}
-            <div className="grid grid-cols-7 gap-2 mb-3">
-              {["日", "月", "火", "水", "木", "金", "土"].map((day, i) => (
-                <div
-                  key={i}
-                  className="text-center text-xs font-medium text-gray-400"
-                >
-                  {day}
-                </div>
-              ))}
-            </div>
-
-            {/* Calendar days */}
-            <div className="grid grid-cols-7 gap-2">
-              {calendarDays.map((day, index) => {
-                const hasRecord = day && recordedDays.includes(day);
-                const isTodayDate = isCurrentMonth && day === today.getDate();
-
-                return (
+        {/* 中央カラム：プレイしたゲーム一覧 */}
+        <div className="md:col-span-5">
+          <Card className="shadow-lg border-0 h-full">
+            <CardHeader className="border-b bg-gradient-to-r from-blue-50 to-purple-50">
+              <CardTitle className="text-purple-900">プレイしたゲーム</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {playedGames.map((game) => (
                   <div
-                    key={index}
-                    className="aspect-square flex items-center justify-center"
+                    key={game.id}
+                    className={`relative p-3 rounded-xl transition-all ${
+                      game.isRecent
+                        ? "bg-gradient-to-br from-yellow-50 to-orange-50 border-2 border-yellow-300 shadow-md"
+                        : "bg-gray-100 border-2 border-gray-300 opacity-60"
+                    }`}
                   >
-                    {day && (
-                      <div className="relative w-full h-full flex items-center justify-center">
+                    {/* メダル風円形 */}
+                    <div
+                      className={`w-16 h-16 mx-auto mb-2 rounded-full flex items-center justify-center text-2xl font-bold shadow-lg ${
+                        game.isRecent
+                          ? "bg-gradient-to-br from-yellow-400 to-orange-500 text-white"
+                          : "bg-gray-400 text-gray-200"
+                      }`}
+                    >
+                      {game.playCount}
+                    </div>
+                    <p
+                      className={`text-xs text-center font-semibold leading-tight ${
+                        game.isRecent ? "text-gray-800" : "text-gray-500"
+                      }`}
+                    >
+                      {game.name}
+                    </p>
+                    {game.isRecent && (
+                      <Badge className="absolute top-1 right-1 bg-green-500 text-xs px-1.5 py-0">
+                        NEW
+                      </Badge>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* 右カラム：カレンダー + AIコメント */}
+        <div className="md:col-span-4 space-y-4">
+          {/* カレンダー */}
+          <Card className="shadow-lg border-0">
+            <CardContent className="pt-6">
+              {/* Month/Year header */}
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-gray-800">
+                  {selectedYear}年{selectedMonth}月
+                </h3>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={handlePreviousMonth}
+                    className="p-1.5 hover:bg-purple-100 rounded-full transition-colors"
+                  >
+                    <svg
+                      className="w-4 h-4 text-purple-600"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M15 19l-7-7 7-7"
+                      />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={handleNextMonth}
+                    className="p-1.5 hover:bg-purple-100 rounded-full transition-colors"
+                  >
+                    <svg
+                      className="w-4 h-4 text-purple-600"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 5l7 7-7 7"
+                      />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              {/* Weekday headers */}
+              <div className="grid grid-cols-7 gap-1 mb-2">
+                {["日", "月", "火", "水", "木", "金", "土"].map((day, i) => (
+                  <div
+                    key={i}
+                    className="text-center text-xs font-medium text-gray-400"
+                  >
+                    {day}
+                  </div>
+                ))}
+              </div>
+
+              {/* Calendar days */}
+              <div className="grid grid-cols-7 gap-1">
+                {calendarDays.map((day, index) => {
+                  const hasRecord = day && recordedDays.includes(day);
+                  const isTodayDate = isCurrentMonth && day === today.getDate();
+
+                  return (
+                    <div
+                      key={index}
+                      className="aspect-square flex items-center justify-center"
+                    >
+                      {day && (
                         <button
-                          className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium transition-all ${
+                          className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium transition-all ${
                             isTodayDate
-                              ? "bg-gradient-to-br from-blue-500 to-cyan-500 text-white shadow-lg"
+                              ? "bg-gradient-to-br from-blue-500 to-cyan-500 text-white shadow-lg ring-2 ring-blue-300"
                               : hasRecord
                               ? "bg-gradient-to-br from-green-400 to-emerald-400 text-white shadow-md"
                               : "text-gray-700 hover:bg-gray-100"
@@ -298,149 +327,78 @@ export default function HealthGraphPage() {
                         >
                           {day}
                         </button>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-
-            <div className="mt-4 flex items-center gap-4 text-xs text-gray-600">
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded-full bg-gradient-to-br from-green-400 to-emerald-400"></div>
-                <span>記録あり</span>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500"></div>
-                <span>今日</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        {/* 気分・感情の円グラフ */}
-        <Card className="shadow-lg border-0">
-          <CardHeader className="border-b bg-gradient-to-r from-purple-50 to-pink-50">
-            <CardTitle className="text-purple-900">今月の気分</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-6">
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={emotionData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, percent }) =>
-                    `${name} ${(percent * 100).toFixed(0)}%`
-                  }
-                  outerRadius={100}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {emotionData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+          {/* AIキャラクターコメント */}
+          <Card className="shadow-lg border-0 bg-gradient-to-br from-pink-50 to-purple-50">
+            <CardContent className="pt-6 pb-6">
+              <div className="flex items-start gap-3">
+                <div className="h-12 w-12 rounded-full bg-gradient-to-br from-pink-400 to-purple-500 flex items-center justify-center text-2xl shadow-md flex-shrink-0">
+                  🐻
+                </div>
+                <div className="flex-1">
+                  <p className="text-xs font-semibold text-purple-900 mb-1">
+                    HATARAKU T.O. 様
+                  </p>
+                  <p className="text-sm text-gray-700 leading-relaxed">
+                    先月に比べて疲労感が安定してきたね。睡眠時間は少し減っているけど、ゲームへの集中が続いているのは素晴らしい！
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
-      {/* グラフエリア */}
-      <div className="grid gap-4 md:grid-cols-2">
-        {/* 疲労度グラフ */}
-        <Card className="shadow-lg border-0">
-          <CardHeader className="border-b bg-gradient-to-r from-orange-50 to-red-50">
-            <CardTitle className="text-orange-900">疲労度（%）</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-6">
-            <ResponsiveContainer width="100%" height={250}>
-              <LineChart data={dailyHealthData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis dataKey="day" />
-                <YAxis domain={[0, 100]} />
-                <Tooltip />
-                <Line
-                  type="monotone"
-                  dataKey="fatigue"
-                  stroke="#f97316"
-                  strokeWidth={2}
-                  dot={{ r: 3 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        {/* 睡眠時間グラフ */}
-        <Card className="shadow-lg border-0">
-          <CardHeader className="border-b bg-gradient-to-r from-blue-50 to-cyan-50">
-            <CardTitle className="text-blue-900">睡眠時間（時間）</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-6">
-            <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={dailyHealthData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis dataKey="day" />
-                <YAxis domain={[0, 10]} />
-                <Tooltip />
-                <Bar dataKey="sleepHours" fill="#3b82f6" />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* 天気・気温・気圧グラフ */}
+      {/* 下段：時系列コンディショングラフ */}
       <Card className="shadow-lg border-0">
-        <CardHeader className="border-b bg-gradient-to-r from-sky-50 to-blue-50">
-          <CardTitle className="text-sky-900">天気・気温・気圧</CardTitle>
+        <CardHeader className="border-b bg-gradient-to-r from-orange-50 to-purple-50">
+          <CardTitle className="text-purple-900">時系列コンディション</CardTitle>
         </CardHeader>
         <CardContent className="pt-6">
           <ResponsiveContainer width="100%" height={300}>
             <ComposedChart data={dailyHealthData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
               <XAxis dataKey="day" />
-              <YAxis yAxisId="left" label={{ value: "気温(℃)", angle: -90, position: "insideLeft" }} />
+              <YAxis yAxisId="left" domain={[0, 100]} label={{ value: "疲労度(%)", angle: -90, position: "insideLeft" }} />
               <YAxis
                 yAxisId="right"
                 orientation="right"
-                label={{ value: "気圧(hPa)", angle: 90, position: "insideRight" }}
+                domain={[0, 10]}
+                label={{ value: "睡眠時間(h)", angle: 90, position: "insideRight" }}
               />
               <Tooltip />
               <Legend />
               <Line
                 yAxisId="left"
                 type="monotone"
-                dataKey="temperature"
-                stroke="#ef4444"
+                dataKey="fatigue"
+                stroke="#f97316"
                 strokeWidth={2}
-                name="気温"
+                name="疲労度"
                 dot={{ r: 3 }}
               />
-              <Line
-                yAxisId="right"
-                type="monotone"
-                dataKey="pressure"
-                stroke="#8b5cf6"
-                strokeWidth={2}
-                name="気圧"
-                dot={{ r: 3 }}
-              />
+              <Bar yAxisId="right" dataKey="sleepHours" fill="#3b82f6" name="睡眠時間" />
             </ComposedChart>
           </ResponsiveContainer>
 
-          {/* 天気アイコン表示 */}
-          <div className="mt-4 grid grid-cols-7 gap-2">
-            {dailyHealthData.slice(0, 7).map((data) => (
-              <div key={data.day} className="flex flex-col items-center gap-1">
-                <span className="text-xs text-gray-500">{data.day}日</span>
-                {getWeatherIcon(data.weather)}
-              </div>
-            ))}
+          {/* 天気・気温表示 */}
+          <div className="mt-6 pt-4 border-t border-gray-200">
+            <div className="grid grid-cols-7 gap-2">
+              {dailyHealthData.slice(0, 7).map((data) => (
+                <div key={data.day} className="flex flex-col items-center gap-1">
+                  <span className="text-xs text-gray-500 font-medium">{data.day}日</span>
+                  {getWeatherIcon(data.weather, "h-5 w-5")}
+                  <span className="text-xs text-gray-600">{data.temperature}℃</span>
+                </div>
+              ))}
+            </div>
           </div>
         </CardContent>
       </Card>
