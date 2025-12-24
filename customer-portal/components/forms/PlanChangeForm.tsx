@@ -58,17 +58,19 @@ export function PlanChangeForm({
 
   const handleUserCountChange = (count: number) => {
     setUserCount(count);
-    // Initialize user data
+    // Initialize user data (simplified for Focus plan)
     const newUsers = Array.from({ length: count }, (_, i) => ({
       id: i,
       initials: "",
+      selectedGames: [] as string[],
+      backupGame: "",
+      sheetType: "NORMAL" as const,
+      // Fields for Flex plan only
       age: "",
       diagnosis: "",
       attendanceDays: "",
       reasons: [] as string[],
       goals: [] as string[],
-      sheetType: "NORMAL" as const,
-      selectedGames: [] as string[],
     }));
     setUsers(newUsers);
   };
@@ -165,37 +167,19 @@ export function PlanChangeForm({
         </div>
       )}
 
-      {/* Backup Game */}
-      {targetPlan && (targetPlan === "ENTRY" || targetPlan === "FLEX" || targetPlan === "FOCUS") && (
+      {/* Backup Game (for Entry and Flex only) */}
+      {targetPlan && (targetPlan === "ENTRY" || targetPlan === "FLEX") && (
         <div>
           <label className="text-sm font-medium mb-2 block">
             予備ゲーム（1個） <span className="text-red-500">*</span>
           </label>
-          {targetPlan === "FOCUS" ? (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-2">
-              <p className="text-xs text-blue-900">
-                利用者が選択したゲーム以外から1個選択してください
-              </p>
-            </div>
-          ) : null}
           <Select
             value={backupGame}
             onChange={(e) => setBackupGame(e.target.value)}
             required
           >
             <option value="">選択してください</option>
-            {GAMES.filter((g) => {
-              // Entry/Flexの場合は selectedGames から除外
-              if (targetPlan === "ENTRY" || targetPlan === "FLEX") {
-                return !selectedGames.includes(g.id);
-              }
-              // Focusの場合は各利用者の selectedGames から除外
-              if (targetPlan === "FOCUS") {
-                const allUserGames = users.flatMap((u) => u.selectedGames || []);
-                return !allUserGames.includes(g.id);
-              }
-              return true;
-            }).map((game) => (
+            {GAMES.filter((g) => !selectedGames.includes(g.id)).map((game) => (
               <option key={game.id} value={game.id}>
                 {game.name} (Lv.{game.level})
               </option>
@@ -234,224 +218,298 @@ export function PlanChangeForm({
             <div key={user.id} className="p-4 border rounded-lg space-y-4">
               <h4 className="font-semibold">利用者 {index + 1}</h4>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium mb-1 block">
-                    イニシャル <span className="text-red-500">*</span>
-                  </label>
-                  <Input
-                    placeholder="例：T.K"
-                    value={user.initials}
-                    onChange={(e) => {
-                      const newUsers = [...users];
-                      newUsers[index].initials = e.target.value;
-                      setUsers(newUsers);
-                    }}
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-1 block">
-                    年齢 <span className="text-red-500">*</span>
-                  </label>
-                  <Select
-                    value={user.age}
-                    onChange={(e) => {
-                      const newUsers = [...users];
-                      newUsers[index].age = e.target.value;
-                      setUsers(newUsers);
-                    }}
-                    required
-                  >
-                    <option value="">選択</option>
-                    {AGE_BANDS.map((age) => (
-                      <option key={age} value={age}>
-                        {age}
-                      </option>
-                    ))}
-                  </Select>
-                </div>
-              </div>
-
-              <div>
-                <label className="text-sm font-medium mb-1 block">
-                  主な疾患名
-                </label>
-                <Input
-                  placeholder="例：ADHD、ASD など"
-                  value={user.diagnosis}
-                  onChange={(e) => {
-                    const newUsers = [...users];
-                    newUsers[index].diagnosis = e.target.value;
-                    setUsers(newUsers);
-                  }}
-                />
-              </div>
-
-              <div>
-                <label className="text-sm font-medium mb-1 block">
-                  1週間の通所日数 <span className="text-red-500">*</span>
-                </label>
-                <Select
-                  value={user.attendanceDays}
-                  onChange={(e) => {
-                    const newUsers = [...users];
-                    newUsers[index].attendanceDays = e.target.value;
-                    setUsers(newUsers);
-                  }}
-                  required
-                >
-                  <option value="">選択</option>
-                  {ATTENDANCE_DAYS.map((day) => (
-                    <option key={day} value={day}>
-                      {day}
-                    </option>
-                  ))}
-                </Select>
-              </div>
-
-              <div>
-                <label className="text-sm font-medium mb-2 block">
-                  導入理由（複数選択可）
-                </label>
-                <div className="space-y-2">
-                  {INTRODUCTION_REASONS.map((reason) => (
-                    <Checkbox
-                      key={reason}
-                      id={`reason-${index}-${reason}`}
-                      label={reason}
-                      checked={user.reasons.includes(reason)}
+              {/* Focus plan - simplified form */}
+              {targetPlan === "FOCUS" ? (
+                <>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">
+                      イニシャル <span className="text-red-500">*</span>
+                    </label>
+                    <Input
+                      placeholder="例：T.K"
+                      value={user.initials}
                       onChange={(e) => {
                         const newUsers = [...users];
-                        if (e.target.checked) {
-                          newUsers[index].reasons.push(reason);
-                        } else {
-                          newUsers[index].reasons = newUsers[index].reasons.filter(
-                            (r: string) => r !== reason
-                          );
-                        }
+                        newUsers[index].initials = e.target.value;
+                        setUsers(newUsers);
+                      }}
+                      required
+                    />
+                  </div>
+
+                  {/* Main Games (2 required) */}
+                  <div>
+                    <label className="text-sm font-medium mb-3 block">
+                      メインゲーム（2個選択）
+                      <span className="text-red-500">*</span>
+                      <span className="ml-2 text-xs font-normal text-muted-foreground">
+                        （{user.selectedGames.length}/2個選択済み）
+                      </span>
+                    </label>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                      {GAMES.map((game) => {
+                        const isSelected = user.selectedGames.includes(game.id);
+                        const isDisabled = !isSelected && user.selectedGames.length >= 2;
+
+                        return (
+                          <button
+                            key={game.id}
+                            type="button"
+                            onClick={() => {
+                              const newUsers = [...users];
+                              if (isSelected) {
+                                newUsers[index].selectedGames = user.selectedGames.filter(
+                                  (g: string) => g !== game.id
+                                );
+                              } else if (user.selectedGames.length < 2) {
+                                newUsers[index].selectedGames = [...user.selectedGames, game.id];
+                              }
+                              setUsers(newUsers);
+                            }}
+                            disabled={isDisabled}
+                            className={`p-3 border-2 rounded-lg text-left transition-all ${
+                              isSelected
+                                ? "border-primary bg-primary/10"
+                                : "border-gray-200 hover:border-gray-300"
+                            } ${isDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
+                          >
+                            <div className="space-y-2">
+                              <div className="relative w-full aspect-video rounded-md overflow-hidden bg-gray-100">
+                                <Image
+                                  src={game.image}
+                                  alt={game.name}
+                                  fill
+                                  className="object-cover"
+                                />
+                              </div>
+                              <div className="font-semibold text-sm">{game.name}</div>
+                              <div className="text-xs text-muted-foreground">
+                                Lv.{game.level}
+                                {game.requiresAnyDesk && " *"}
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Backup Game (1 required) */}
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">
+                      予備ゲーム（1個） <span className="text-red-500">*</span>
+                    </label>
+                    <Select
+                      value={user.backupGame || ""}
+                      onChange={(e) => {
+                        const newUsers = [...users];
+                        newUsers[index].backupGame = e.target.value;
+                        setUsers(newUsers);
+                      }}
+                      required
+                    >
+                      <option value="">選択してください</option>
+                      {GAMES.filter((g) => !user.selectedGames.includes(g.id)).map((game) => (
+                        <option key={game.id} value={game.id}>
+                          {game.name} (Lv.{game.level})
+                        </option>
+                      ))}
+                    </Select>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      メインゲーム以外から選択してください
+                    </p>
+                  </div>
+
+                  {/* Sheet Type */}
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">
+                      セルフモニタリングシート形式 <span className="text-red-500">*</span>
+                    </label>
+                    <div className="flex gap-4">
+                      <Checkbox
+                        id={`sheet-normal-${index}`}
+                        label="通常版"
+                        checked={user.sheetType === "NORMAL"}
+                        onChange={() => {
+                          const newUsers = [...users];
+                          newUsers[index].sheetType = "NORMAL";
+                          setUsers(newUsers);
+                        }}
+                      />
+                      <Checkbox
+                        id={`sheet-light-${index}`}
+                        label="簡易版"
+                        checked={user.sheetType === "LIGHT"}
+                        onChange={() => {
+                          const newUsers = [...users];
+                          newUsers[index].sheetType = "LIGHT";
+                          setUsers(newUsers);
+                        }}
+                      />
+                    </div>
+                  </div>
+                </>
+              ) : (
+                /* Flex plan - detailed form */
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium mb-1 block">
+                        イニシャル <span className="text-red-500">*</span>
+                      </label>
+                      <Input
+                        placeholder="例：T.K"
+                        value={user.initials}
+                        onChange={(e) => {
+                          const newUsers = [...users];
+                          newUsers[index].initials = e.target.value;
+                          setUsers(newUsers);
+                        }}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium mb-1 block">
+                        年齢 <span className="text-red-500">*</span>
+                      </label>
+                      <Select
+                        value={user.age}
+                        onChange={(e) => {
+                          const newUsers = [...users];
+                          newUsers[index].age = e.target.value;
+                          setUsers(newUsers);
+                        }}
+                        required
+                      >
+                        <option value="">選択</option>
+                        {AGE_BANDS.map((age) => (
+                          <option key={age} value={age}>
+                            {age}
+                          </option>
+                        ))}
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">
+                      主な疾患名
+                    </label>
+                    <Input
+                      placeholder="例：ADHD、ASD など"
+                      value={user.diagnosis}
+                      onChange={(e) => {
+                        const newUsers = [...users];
+                        newUsers[index].diagnosis = e.target.value;
                         setUsers(newUsers);
                       }}
                     />
-                  ))}
-                </div>
-              </div>
+                  </div>
 
-              <div>
-                <label className="text-sm font-medium mb-2 block">
-                  ご利用の目的（複数選択可）
-                </label>
-                <div className="space-y-2">
-                  {USAGE_GOALS.map((goal) => (
-                    <Checkbox
-                      key={goal}
-                      id={`goal-${index}-${goal}`}
-                      label={goal}
-                      checked={user.goals.includes(goal)}
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">
+                      1週間の通所日数 <span className="text-red-500">*</span>
+                    </label>
+                    <Select
+                      value={user.attendanceDays}
                       onChange={(e) => {
                         const newUsers = [...users];
-                        if (e.target.checked) {
-                          newUsers[index].goals.push(goal);
-                        } else {
-                          newUsers[index].goals = newUsers[index].goals.filter(
-                            (g: string) => g !== goal
-                          );
-                        }
+                        newUsers[index].attendanceDays = e.target.value;
                         setUsers(newUsers);
                       }}
-                    />
-                  ))}
-                </div>
-              </div>
+                      required
+                    >
+                      <option value="">選択</option>
+                      {ATTENDANCE_DAYS.map((day) => (
+                        <option key={day} value={day}>
+                          {day}
+                        </option>
+                      ))}
+                    </Select>
+                  </div>
 
-              <div>
-                <label className="text-sm font-medium mb-2 block">
-                  セルフモニタリングシート形式 <span className="text-red-500">*</span>
-                </label>
-                <div className="flex gap-4">
-                  <Checkbox
-                    id={`sheet-normal-${index}`}
-                    label="通常版"
-                    checked={user.sheetType === "NORMAL"}
-                    onChange={() => {
-                      const newUsers = [...users];
-                      newUsers[index].sheetType = "NORMAL";
-                      setUsers(newUsers);
-                    }}
-                  />
-                  <Checkbox
-                    id={`sheet-light-${index}`}
-                    label="簡易版"
-                    checked={user.sheetType === "LIGHT"}
-                    onChange={() => {
-                      const newUsers = [...users];
-                      newUsers[index].sheetType = "LIGHT";
-                      setUsers(newUsers);
-                    }}
-                  />
-                </div>
-              </div>
-
-              {/* Game selection for Focus plan */}
-              {targetPlan === "FOCUS" && (
-                <div>
-                  <label className="text-sm font-medium mb-3 block">
-                    この利用者のゲーム（2個選択）
-                    <span className="text-red-500">*</span>
-                    <span className="ml-2 text-xs font-normal text-muted-foreground">
-                      （{user.selectedGames.length}/2個選択済み）
-                    </span>
-                  </label>
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                    {GAMES.map((game) => {
-                      const isSelected = user.selectedGames.includes(game.id);
-                      const isDisabled = !isSelected && user.selectedGames.length >= 2;
-
-                      return (
-                        <button
-                          key={game.id}
-                          type="button"
-                          onClick={() => {
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">
+                      導入理由（複数選択可）
+                    </label>
+                    <div className="space-y-2">
+                      {INTRODUCTION_REASONS.map((reason) => (
+                        <Checkbox
+                          key={reason}
+                          id={`reason-${index}-${reason}`}
+                          label={reason}
+                          checked={user.reasons.includes(reason)}
+                          onChange={(e) => {
                             const newUsers = [...users];
-                            if (isSelected) {
-                              newUsers[index].selectedGames = user.selectedGames.filter(
-                                (g: string) => g !== game.id
+                            if (e.target.checked) {
+                              newUsers[index].reasons.push(reason);
+                            } else {
+                              newUsers[index].reasons = newUsers[index].reasons.filter(
+                                (r: string) => r !== reason
                               );
-                            } else if (user.selectedGames.length < 2) {
-                              newUsers[index].selectedGames = [...user.selectedGames, game.id];
                             }
                             setUsers(newUsers);
                           }}
-                          disabled={isDisabled}
-                          className={`p-3 border-2 rounded-lg text-left transition-all ${
-                            isSelected
-                              ? "border-primary bg-primary/10"
-                              : "border-gray-200 hover:border-gray-300"
-                          } ${isDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
-                        >
-                          <div className="space-y-2">
-                            <div className="relative w-full aspect-video rounded-md overflow-hidden bg-gray-100">
-                              <Image
-                                src={game.image}
-                                alt={game.name}
-                                fill
-                                className="object-cover"
-                              />
-                            </div>
-                            <div className="font-semibold text-sm">{game.name}</div>
-                            <div className="text-xs text-muted-foreground">
-                              Lv.{game.level}
-                              {game.requiresAnyDesk && " *"}
-                            </div>
-                          </div>
-                        </button>
-                      );
-                    })}
+                        />
+                      ))}
+                    </div>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    ※ 必ず2個のゲームを選択してください
-                  </p>
-                </div>
+
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">
+                      ご利用の目的（複数選択可）
+                    </label>
+                    <div className="space-y-2">
+                      {USAGE_GOALS.map((goal) => (
+                        <Checkbox
+                          key={goal}
+                          id={`goal-${index}-${goal}`}
+                          label={goal}
+                          checked={user.goals.includes(goal)}
+                          onChange={(e) => {
+                            const newUsers = [...users];
+                            if (e.target.checked) {
+                              newUsers[index].goals.push(goal);
+                            } else {
+                              newUsers[index].goals = newUsers[index].goals.filter(
+                                (g: string) => g !== goal
+                              );
+                            }
+                            setUsers(newUsers);
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">
+                      セルフモニタリングシート形式 <span className="text-red-500">*</span>
+                    </label>
+                    <div className="flex gap-4">
+                      <Checkbox
+                        id={`sheet-normal-${index}`}
+                        label="通常版"
+                        checked={user.sheetType === "NORMAL"}
+                        onChange={() => {
+                          const newUsers = [...users];
+                          newUsers[index].sheetType = "NORMAL";
+                          setUsers(newUsers);
+                        }}
+                      />
+                      <Checkbox
+                        id={`sheet-light-${index}`}
+                        label="簡易版"
+                        checked={user.sheetType === "LIGHT"}
+                        onChange={() => {
+                          const newUsers = [...users];
+                          newUsers[index].sheetType = "LIGHT";
+                          setUsers(newUsers);
+                        }}
+                      />
+                    </div>
+                  </div>
+                </>
               )}
             </div>
           ))}
