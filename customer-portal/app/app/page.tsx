@@ -55,11 +55,12 @@ const importantDates = [
   { date: 31, title: "月末メンテナンス", type: "maintenance" as const },
 ];
 
-// Wage phase data
+// Wage phase data - soft, professional colors
 const wagePhases = [
   {
     phase: "0〜3ヶ月",
-    color: "from-cyan-400 to-cyan-500",
+    color: "from-blue-100 to-blue-200",
+    textColor: "text-blue-700",
     levels: [
       { level: 1, wage: 50 },
       { level: 2, wage: 60 },
@@ -69,7 +70,8 @@ const wagePhases = [
   },
   {
     phase: "4〜9ヶ月",
-    color: "from-blue-500 to-blue-600",
+    color: "from-indigo-100 to-indigo-200",
+    textColor: "text-indigo-700",
     levels: [
       { level: 1, wage: 60 },
       { level: 2, wage: 70 },
@@ -79,7 +81,8 @@ const wagePhases = [
   },
   {
     phase: "9ヶ月以上",
-    color: "from-indigo-600 to-indigo-700",
+    color: "from-purple-100 to-purple-200",
+    textColor: "text-purple-700",
     levels: [
       { level: 1, wage: 70 },
       { level: 2, wage: 80 },
@@ -91,14 +94,14 @@ const wagePhases = [
 
 export default function HomePage() {
   const [expandedAnnouncement, setExpandedAnnouncement] = useState<number | null>(null);
+  const [selectedYear, setSelectedYear] = useState<number>(2024);
+  const [selectedMonth, setSelectedMonth] = useState<number>(12);
 
   // TODO: 本番環境ではAPIから取得
   const currentPlan = "RevelAppコース A-フレキシブル";
   const userCount = 25;
   const nextDeadline = "2024年12月15日";
   const continuationMonths = 7; // 継続月数
-  const currentYear = 2024;
-  const currentMonth = 12;
 
   // Determine current phase
   const getCurrentPhase = () => {
@@ -109,10 +112,29 @@ export default function HomePage() {
 
   const currentPhase = getCurrentPhase();
 
+  // Calendar navigation
+  const handlePreviousMonth = () => {
+    if (selectedMonth === 1) {
+      setSelectedMonth(12);
+      setSelectedYear(selectedYear - 1);
+    } else {
+      setSelectedMonth(selectedMonth - 1);
+    }
+  };
+
+  const handleNextMonth = () => {
+    if (selectedMonth === 12) {
+      setSelectedMonth(1);
+      setSelectedYear(selectedYear + 1);
+    } else {
+      setSelectedMonth(selectedMonth + 1);
+    }
+  };
+
   // Generate calendar days
   const generateCalendarDays = () => {
-    const year = currentYear;
-    const month = currentMonth - 1; // JS months are 0-indexed
+    const year = selectedYear;
+    const month = selectedMonth - 1; // JS months are 0-indexed
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
     const daysInMonth = lastDay.getDate();
@@ -134,7 +156,8 @@ export default function HomePage() {
   };
 
   const calendarDays = generateCalendarDays();
-  const today = new Date().getDate();
+  const today = new Date();
+  const isCurrentMonth = today.getFullYear() === selectedYear && today.getMonth() + 1 === selectedMonth;
 
   const getDateInfo = (day: number | null) => {
     if (!day) return null;
@@ -293,28 +316,28 @@ export default function HomePage() {
               </div>
 
               {/* Phase visualization */}
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {wagePhases.map((phase, index) => (
                   <div key={index} className="relative">
                     <div
-                      className={`p-4 rounded-lg bg-gradient-to-r ${phase.color} ${
-                        index === currentPhase ? "ring-4 ring-blue-300" : "opacity-60"
-                      }`}
+                      className={`p-4 rounded-xl bg-gradient-to-r ${phase.color} ${
+                        index === currentPhase ? "ring-2 ring-indigo-400 shadow-md" : "opacity-50"
+                      } transition-all`}
                     >
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-white font-bold text-sm">{phase.phase}</span>
+                      <div className="flex items-center justify-between mb-3">
+                        <span className={`font-semibold text-sm ${phase.textColor}`}>{phase.phase}</span>
                         {index === currentPhase && (
-                          <Badge className="bg-white text-blue-600">現在</Badge>
+                          <Badge className="bg-indigo-600 text-white text-xs">現在</Badge>
                         )}
                       </div>
                       <div className="grid grid-cols-4 gap-2">
                         {phase.levels.map((level) => (
                           <div
                             key={level.level}
-                            className="bg-white/20 backdrop-blur-sm rounded p-2 text-center"
+                            className="bg-white rounded-lg p-2 text-center shadow-sm"
                           >
-                            <div className="text-xs text-white/80">Lv.{level.level}</div>
-                            <div className="text-sm font-bold text-white">{level.wage}円</div>
+                            <div className="text-xs text-gray-500">Lv.{level.level}</div>
+                            <div className={`text-sm font-bold ${phase.textColor}`}>{level.wage}円</div>
                           </div>
                         ))}
                       </div>
@@ -354,16 +377,22 @@ export default function HomePage() {
           <CardContent className="pt-6">
             {/* Month/Year header */}
             <div className="flex items-center justify-between mb-6">
-              <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <button
+                onClick={handlePreviousMonth}
+                className="p-2 hover:bg-purple-100 rounded-lg transition-colors"
+              >
+                <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
               </button>
               <h3 className="text-lg font-bold text-gray-900">
-                {currentYear}年{currentMonth}月
+                {selectedYear}年{selectedMonth}月
               </h3>
-              <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <button
+                onClick={handleNextMonth}
+                className="p-2 hover:bg-purple-100 rounded-lg transition-colors"
+              >
+                <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
               </button>
@@ -387,26 +416,26 @@ export default function HomePage() {
             <div className="grid grid-cols-7 gap-2">
               {calendarDays.map((day, index) => {
                 const dateInfo = day ? getDateInfo(day) : null;
-                const isToday = day === today;
+                const isTodayDate = isCurrentMonth && day === today.getDate();
 
                 return (
                   <div
                     key={index}
-                    className={`aspect-square flex flex-col items-center justify-center rounded-xl text-sm relative transition-all ${
+                    className={`aspect-square flex flex-col items-center justify-center rounded-lg text-base relative transition-all ${
                       !day
                         ? ""
-                        : isToday
-                        ? "bg-purple-600 text-white font-bold shadow-lg scale-105"
+                        : isTodayDate
+                        ? "bg-indigo-600 text-white font-semibold shadow-md"
                         : dateInfo
-                        ? "bg-gradient-to-br from-orange-400 to-red-400 text-white font-semibold cursor-pointer hover:scale-105 shadow-md"
-                        : "hover:bg-gray-100 cursor-pointer"
+                        ? "bg-gradient-to-br from-indigo-100 to-purple-100 text-indigo-700 font-medium cursor-pointer hover:shadow-sm"
+                        : "text-gray-700 hover:bg-gray-50 cursor-pointer"
                     }`}
                   >
                     {day && (
                       <>
-                        <span className={isToday || dateInfo ? "text-white" : "text-gray-700"}>{day}</span>
-                        {dateInfo && !isToday && (
-                          <div className="absolute bottom-1 w-1 h-1 rounded-full bg-white" />
+                        <span className={isTodayDate ? "text-white" : ""}>{day}</span>
+                        {dateInfo && !isTodayDate && (
+                          <div className="absolute bottom-1 w-1.5 h-1.5 rounded-full bg-indigo-500" />
                         )}
                       </>
                     )}
@@ -419,8 +448,8 @@ export default function HomePage() {
             <div className="mt-6 space-y-2 pt-4 border-t">
               <p className="text-xs font-semibold text-gray-600 mb-3">重要な日程</p>
               {importantDates.map((item, index) => (
-                <div key={index} className="flex items-center gap-3 text-sm p-2 rounded-lg hover:bg-gray-50 transition-colors">
-                  <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-gradient-to-br from-orange-400 to-red-400 flex items-center justify-center text-white font-bold text-xs">
+                <div key={index} className="flex items-center gap-3 text-sm p-2 rounded-lg hover:bg-indigo-50 transition-colors">
+                  <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center text-indigo-700 font-bold text-xs shadow-sm">
                     {item.date}
                   </div>
                   <span className="text-gray-700">{item.title}</span>
