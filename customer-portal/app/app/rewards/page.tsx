@@ -132,104 +132,107 @@ export default function RewardsPage() {
         </p>
       </div>
 
-      {/* Stats */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              {getCurrentYearMonth()}分の工賃
+      {/* Stats & Wage Phase - 2 Column Layout */}
+      <div className="grid gap-6 md:grid-cols-2">
+        {/* Left: Stats Cards */}
+        <div className="space-y-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                {getCurrentYearMonth()}分の工賃
+              </CardTitle>
+              <DollarSign className="h-4 w-4 text-green-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{formatCurrency(78000)}</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                確定済み・振込予定日: 12/25
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">累計工賃</CardTitle>
+              <TrendingUp className="h-4 w-4 text-blue-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{formatCurrency(433000)}</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                サービス開始から
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">翌月への繰越金額</CardTitle>
+              <Calendar className="h-4 w-4 text-purple-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{formatCurrency(5000)}</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                次月に持ち越し
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Right: Continuation Period & Wage Phase */}
+        <Card className="shadow-lg border-0">
+          <CardHeader className="border-b bg-gradient-to-r from-blue-50 to-cyan-50">
+            <CardTitle className="flex items-center gap-2 text-blue-900">
+              <TrendingUp className="h-5 w-5 text-blue-600" />
+              継続期間と工賃フェーズ
             </CardTitle>
-            <DollarSign className="h-4 w-4 text-green-600" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(78000)}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              確定済み・振込予定日: 12/25
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">累計工賃</CardTitle>
-            <TrendingUp className="h-4 w-4 text-blue-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(433000)}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              サービス開始から
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">翌月への繰越金額</CardTitle>
-            <Calendar className="h-4 w-4 text-purple-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(5000)}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              次月に持ち越し
-            </p>
+          <CardContent className="pt-6">
+            <div className="space-y-4">
+              {/* Current status */}
+              <div className="text-center mb-6">
+                <p className="text-sm text-muted-foreground mb-1">現在の継続月数</p>
+                <p className="text-4xl font-bold text-primary">{continuationMonths}ヶ月</p>
+                <p className="text-sm text-muted-foreground mt-2">
+                  {wagePhases[currentPhase].phase} フェーズ
+                </p>
+              </div>
+
+              {/* Phase visualization */}
+              <div className="space-y-3">
+                {wagePhases.map((phase, index) => (
+                  <div key={index} className="relative">
+                    <div
+                      className={`p-4 rounded-xl bg-gradient-to-r ${phase.color} ${
+                        index === currentPhase ? "ring-2 ring-indigo-400 shadow-md" : "opacity-50"
+                      } transition-all`}
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <span className={`font-semibold text-sm ${phase.textColor}`}>{phase.phase}</span>
+                        {index === currentPhase && (
+                          <Badge className="bg-indigo-600 text-white text-xs">現在</Badge>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-4 gap-2">
+                        {phase.levels.map((level) => (
+                          <div
+                            key={level.level}
+                            className="bg-white rounded-lg p-2 text-center shadow-sm"
+                          >
+                            <div className="text-xs text-gray-500">Lv.{level.level}</div>
+                            <div className={`text-sm font-bold ${phase.textColor}`}>{level.wage}円</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <p className="text-xs text-muted-foreground text-center mt-4">
+                ※1回プレイあたりの工賃額
+              </p>
+            </div>
           </CardContent>
         </Card>
       </div>
-
-      {/* Continuation Period & Wage Phase */}
-      <Card className="shadow-lg border-0">
-        <CardHeader className="border-b bg-gradient-to-r from-blue-50 to-cyan-50">
-          <CardTitle className="flex items-center gap-2 text-blue-900">
-            <TrendingUp className="h-5 w-5 text-blue-600" />
-            継続期間と工賃フェーズ
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="pt-6">
-          <div className="space-y-4">
-            {/* Current status */}
-            <div className="text-center mb-6">
-              <p className="text-sm text-muted-foreground mb-1">現在の継続月数</p>
-              <p className="text-4xl font-bold text-primary">{continuationMonths}ヶ月</p>
-              <p className="text-sm text-muted-foreground mt-2">
-                {wagePhases[currentPhase].phase} フェーズ
-              </p>
-            </div>
-
-            {/* Phase visualization */}
-            <div className="space-y-3">
-              {wagePhases.map((phase, index) => (
-                <div key={index} className="relative">
-                  <div
-                    className={`p-4 rounded-xl bg-gradient-to-r ${phase.color} ${
-                      index === currentPhase ? "ring-2 ring-indigo-400 shadow-md" : "opacity-50"
-                    } transition-all`}
-                  >
-                    <div className="flex items-center justify-between mb-3">
-                      <span className={`font-semibold text-sm ${phase.textColor}`}>{phase.phase}</span>
-                      {index === currentPhase && (
-                        <Badge className="bg-indigo-600 text-white text-xs">現在</Badge>
-                      )}
-                    </div>
-                    <div className="grid grid-cols-4 gap-2">
-                      {phase.levels.map((level) => (
-                        <div
-                          key={level.level}
-                          className="bg-white rounded-lg p-2 text-center shadow-sm"
-                        >
-                          <div className="text-xs text-gray-500">Lv.{level.level}</div>
-                          <div className={`text-sm font-bold ${phase.textColor}`}>{level.wage}円</div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <p className="text-xs text-muted-foreground text-center mt-4">
-              ※1回プレイあたりの工賃額
-            </p>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Two Column Layout */}
       <div className="grid gap-4 md:grid-cols-2">
