@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import {
   LineChart,
   Line,
@@ -47,8 +46,6 @@ const playedGames = [
   { id: "axie-tri", name: "Axie トライフォース", playCount: 16, isRecent: false },
   { id: "xeno", name: "XENO", playCount: 12, isRecent: true },
   { id: "elf2", name: "エルフの森 Lv2", playCount: 8, isRecent: false },
-  { id: "axie-quest", name: "Axie クエスト", playCount: 6, isRecent: false },
-  { id: "cryptospells", name: "クリプトスペルズ", playCount: 4, isRecent: false },
 ];
 
 // 記録がある日（カレンダー用）
@@ -77,19 +74,14 @@ const records = [
 ];
 
 // 天気アイコンを取得
-const getWeatherIcon = (weather: string, size: string = "h-4 w-4") => {
-  switch (weather) {
-    case "sunny":
-      return <Sun className={`${size} text-yellow-500`} />;
-    case "cloudy":
-      return <Cloud className={`${size} text-gray-500`} />;
-    case "rainy":
-      return <CloudRain className={`${size} text-blue-500`} />;
-    case "snow":
-      return <CloudSnow className={`${size} text-blue-300`} />;
-    default:
-      return <Sun className={size} />;
-  }
+const getWeatherIcon = (weather: string) => {
+  const icons = {
+    sunny: "☀️",
+    cloudy: "☁️",
+    rainy: "🌧️",
+    snow: "❄️",
+  };
+  return icons[weather as keyof typeof icons] || "☀️";
 };
 
 export default function HealthGraphPage() {
@@ -140,303 +132,214 @@ export default function HealthGraphPage() {
   };
 
   return (
-    <div className="space-y-8 pb-8">
-      {/* Page Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-gray-800">体調グラフ</h1>
-        <p className="text-gray-600 mt-1 text-sm">
-          日々の体調変化とゲームプレイ記録を確認できます
-        </p>
+    <div className="max-w-[210mm] mx-auto bg-white p-8 space-y-6">
+      {/* ヘッダー */}
+      <div className="border-b-2 border-gray-900 pb-3">
+        <h1 className="text-2xl font-bold text-gray-900">体調・行動ダッシュボード</h1>
+        <div className="flex justify-between items-center mt-2">
+          <p className="text-sm text-gray-600">HATARAKU T.O. 様</p>
+          <p className="text-sm text-gray-600">
+            {selectedYear}年{selectedMonth}月度
+          </p>
+        </div>
       </div>
 
-      {/* サマリー指標 - 横並び3つ */}
-      <div className="grid gap-6 md:grid-cols-3">
-        {/* 累計プレイ回数 */}
-        <Card className="shadow-sm border border-gray-200">
-          <CardContent className="pt-6 pb-6">
-            <div className="flex items-center justify-between mb-2">
-              <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center">
-                <Gamepad2 className="h-5 w-5 text-white" />
-              </div>
-              <TrendingUp className="h-5 w-5 text-green-600" />
-            </div>
-            <p className="text-sm text-gray-600 mb-1">累計プレイ回数</p>
-            <p className="text-3xl font-bold text-gray-900">230回</p>
-            <p className="text-xs text-green-600 mt-1">+14回 先月比</p>
-          </CardContent>
-        </Card>
-
-        {/* 平均睡眠時間 */}
-        <Card className="shadow-sm border border-gray-200">
-          <CardContent className="pt-6 pb-6">
-            <div className="flex items-center justify-between mb-2">
-              <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-purple-400 to-blue-500 flex items-center justify-center">
-                <Cloud className="h-5 w-5 text-white" />
-              </div>
-              <TrendingDown className="h-5 w-5 text-red-500" />
-            </div>
-            <p className="text-sm text-gray-600 mb-1">平均睡眠時間</p>
-            <p className="text-3xl font-bold text-gray-900">6.2時間</p>
-            <p className="text-xs text-red-600 mt-1">-0.5時間 先月比</p>
-          </CardContent>
-        </Card>
-
-        {/* メダル/ランク */}
-        <Card className="shadow-sm border border-gray-200">
-          <CardContent className="pt-6 pb-6">
-            <div className="flex items-center justify-between mb-2">
-              <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-pink-400 to-purple-500 flex items-center justify-center">
-                <span className="text-2xl">🏆</span>
-              </div>
-            </div>
-            <p className="text-sm text-gray-600 mb-1">現在のランク</p>
-            <p className="text-3xl font-bold text-gray-900">ゴールド</p>
-            <p className="text-xs text-gray-500 mt-1">230回達成</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* メインコンテンツ：2カラム */}
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* 左: プレイしたゲーム + カレンダー */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* プレイしたゲーム */}
-          <Card className="shadow-sm border border-gray-200">
-            <CardHeader className="border-b bg-gray-50">
-              <CardTitle className="text-lg text-gray-900">プレイしたゲーム</CardTitle>
-            </CardHeader>
-            <CardContent className="pt-6">
-              <div className="flex gap-4 overflow-x-auto pb-2">
-                {playedGames.slice(0, 6).map((game) => (
-                  <div
-                    key={game.id}
-                    className={`flex-shrink-0 text-center ${
-                      game.isRecent ? "" : "opacity-50"
-                    }`}
-                  >
-                    <div
-                      className={`w-16 h-16 mx-auto mb-2 rounded-full flex items-center justify-center text-xl font-bold shadow-md ${
-                        game.isRecent
-                          ? "bg-gradient-to-br from-yellow-400 to-orange-500 text-white"
-                          : "bg-gray-300 text-gray-600"
-                      }`}
-                    >
-                      {game.playCount}
-                    </div>
-                    <p className="text-xs font-medium text-gray-700 w-20 truncate">
-                      {game.name}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* カレンダー */}
-          <Card className="shadow-sm border border-gray-200">
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold text-gray-900">
-                  {selectedYear}年{selectedMonth}月
-                </h3>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={handlePreviousMonth}
-                    className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                  >
-                    <svg
-                      className="w-4 h-4 text-gray-600"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M15 19l-7-7 7-7"
-                      />
-                    </svg>
-                  </button>
-                  <button
-                    onClick={handleNextMonth}
-                    className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                  >
-                    <svg
-                      className="w-4 h-4 text-gray-600"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 5l7 7-7 7"
-                      />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-7 gap-2 mb-3">
-                {["日", "月", "火", "水", "木", "金", "土"].map((day, i) => (
-                  <div
-                    key={i}
-                    className="text-center text-xs font-medium text-gray-500"
-                  >
-                    {day}
-                  </div>
-                ))}
-              </div>
-
-              <div className="grid grid-cols-7 gap-2">
-                {calendarDays.map((day, index) => {
-                  const hasRecord = day && recordedDays.includes(day);
-                  const isTodayDate = isCurrentMonth && day === today.getDate();
-
-                  return (
-                    <div
-                      key={index}
-                      className="aspect-square flex items-center justify-center"
-                    >
-                      {day && (
-                        <button
-                          className={`w-9 h-9 rounded-lg flex items-center justify-center text-sm font-medium transition-all ${
-                            isTodayDate
-                              ? "bg-blue-500 text-white shadow-sm"
-                              : hasRecord
-                              ? "bg-green-100 text-green-700"
-                              : "text-gray-700 hover:bg-gray-100"
-                          }`}
-                        >
-                          {day}
-                        </button>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
+      {/* サマリー指標 */}
+      <div className="grid grid-cols-3 gap-4">
+        <div className="border-2 border-gray-300 p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Gamepad2 className="h-5 w-5" />
+            <p className="text-xs font-semibold text-gray-700">累計プレイ回数</p>
+          </div>
+          <p className="text-3xl font-bold">230回</p>
+          <div className="flex items-center gap-1 mt-1">
+            <TrendingUp className="h-4 w-4 text-gray-600" />
+            <p className="text-xs text-gray-600">+14回</p>
+          </div>
         </div>
 
-        {/* 右: AIコメント */}
-        <div>
-          <Card className="shadow-sm border border-gray-200 bg-gradient-to-br from-purple-50 to-pink-50">
-            <CardContent className="pt-6 pb-6">
-              <div className="flex items-start gap-3 mb-4">
-                <div className="h-12 w-12 rounded-full bg-gradient-to-br from-pink-400 to-purple-500 flex items-center justify-center text-2xl flex-shrink-0">
-                  🐻
+        <div className="border-2 border-gray-300 p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Cloud className="h-5 w-5" />
+            <p className="text-xs font-semibold text-gray-700">平均睡眠時間</p>
+          </div>
+          <p className="text-3xl font-bold">6.2時間</p>
+          <div className="flex items-center gap-1 mt-1">
+            <TrendingDown className="h-4 w-4 text-gray-600" />
+            <p className="text-xs text-gray-600">-0.5時間</p>
+          </div>
+        </div>
+
+        <div className="border-2 border-gray-300 p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-xl">🏆</span>
+            <p className="text-xs font-semibold text-gray-700">現在のランク</p>
+          </div>
+          <p className="text-3xl font-bold">ゴールド</p>
+          <p className="text-xs text-gray-600 mt-1">230回達成</p>
+        </div>
+      </div>
+
+      {/* プレイしたゲーム */}
+      <div className="border-2 border-gray-300">
+        <div className="bg-gray-100 border-b-2 border-gray-300 px-4 py-2">
+          <h2 className="font-bold text-sm">プレイしたゲーム</h2>
+        </div>
+        <div className="p-4">
+          <div className="flex gap-6">
+            {playedGames.map((game) => (
+              <div key={game.id} className="text-center">
+                <div
+                  className={`w-14 h-14 rounded-full border-2 flex items-center justify-center text-lg font-bold mb-1 ${
+                    game.isRecent
+                      ? "border-gray-900 bg-gray-900 text-white"
+                      : "border-gray-400 bg-white text-gray-400"
+                  }`}
+                >
+                  {game.playCount}
                 </div>
-                <div>
-                  <p className="text-xs font-semibold text-purple-900 mb-1">
-                    HATARAKU T.O. 様
-                  </p>
-                </div>
+                <p className="text-xs font-medium w-20 truncate">{game.name}</p>
               </div>
-              <p className="text-sm text-gray-700 leading-relaxed">
-                先月に比べて疲労感が安定してきたね。睡眠時間は少し減っているけど、ゲームへの集中が続いているのは素晴らしい！
-              </p>
-            </CardContent>
-          </Card>
+            ))}
+          </div>
         </div>
       </div>
 
       {/* グラフエリア */}
-      <Card className="shadow-sm border border-gray-200">
-        <CardHeader className="border-b bg-gray-50">
-          <CardTitle className="text-lg text-gray-900">時系列コンディション</CardTitle>
-        </CardHeader>
-        <CardContent className="pt-6">
-          <ResponsiveContainer width="100%" height={280}>
-            <ComposedChart data={dailyHealthData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis dataKey="day" stroke="#6b7280" fontSize={12} />
-              <YAxis
-                yAxisId="left"
-                domain={[0, 100]}
-                stroke="#f97316"
-                fontSize={12}
-              />
-              <YAxis
-                yAxisId="right"
-                orientation="right"
-                domain={[0, 10]}
-                stroke="#3b82f6"
-                fontSize={12}
-              />
-              <Tooltip />
-              <Legend />
-              <Line
-                yAxisId="left"
-                type="monotone"
-                dataKey="fatigue"
-                stroke="#f97316"
-                strokeWidth={2}
-                name="疲労度(%)"
-                dot={{ r: 2 }}
-              />
-              <Bar yAxisId="right" dataKey="sleepHours" fill="#3b82f6" name="睡眠時間(h)" />
-            </ComposedChart>
-          </ResponsiveContainer>
+      <div className="grid grid-cols-2 gap-4">
+        {/* 疲労度・睡眠時間 */}
+        <div className="border-2 border-gray-300">
+          <div className="bg-gray-100 border-b-2 border-gray-300 px-4 py-2">
+            <h2 className="font-bold text-sm">疲労度・睡眠時間</h2>
+          </div>
+          <div className="p-4">
+            <ResponsiveContainer width="100%" height={200}>
+              <ComposedChart data={dailyHealthData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#d1d5db" />
+                <XAxis dataKey="day" fontSize={10} />
+                <YAxis yAxisId="left" domain={[0, 100]} fontSize={10} />
+                <YAxis yAxisId="right" orientation="right" domain={[0, 10]} fontSize={10} />
+                <Tooltip />
+                <Legend iconSize={10} wrapperStyle={{ fontSize: "10px" }} />
+                <Line
+                  yAxisId="left"
+                  type="monotone"
+                  dataKey="fatigue"
+                  stroke="#000"
+                  strokeWidth={2}
+                  name="疲労度(%)"
+                  dot={false}
+                />
+                <Bar yAxisId="right" dataKey="sleepHours" fill="#666" name="睡眠(h)" />
+              </ComposedChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
 
-          <div className="mt-6 pt-4 border-t border-gray-200">
-            <div className="flex gap-4 overflow-x-auto">
-              {dailyHealthData.slice(0, 7).map((data) => (
-                <div key={data.day} className="flex-shrink-0 text-center">
-                  <p className="text-xs text-gray-500 mb-1">{data.day}日</p>
-                  {getWeatherIcon(data.weather, "h-5 w-5 mx-auto")}
-                  <p className="text-xs text-gray-600 mt-1">{data.temperature}℃</p>
+        {/* カレンダー */}
+        <div className="border-2 border-gray-300">
+          <div className="bg-gray-100 border-b-2 border-gray-300 px-4 py-2">
+            <h2 className="font-bold text-sm">
+              {selectedYear}年{selectedMonth}月
+            </h2>
+          </div>
+          <div className="p-4">
+            <div className="grid grid-cols-7 gap-1 mb-2">
+              {["日", "月", "火", "水", "木", "金", "土"].map((day, i) => (
+                <div key={i} className="text-center text-xs font-bold">
+                  {day}
                 </div>
               ))}
             </div>
-          </div>
-        </CardContent>
-      </Card>
+            <div className="grid grid-cols-7 gap-1">
+              {calendarDays.map((day, index) => {
+                const hasRecord = day && recordedDays.includes(day);
+                const isTodayDate = isCurrentMonth && day === today.getDate();
 
-      {/* 記録一覧 */}
-      <Card className="shadow-sm border border-gray-200">
-        <CardHeader className="border-b bg-gray-50">
-          <CardTitle className="text-lg text-gray-900">日々の記録</CardTitle>
-        </CardHeader>
-        <CardContent className="pt-6">
-          <div className="space-y-4">
-            {records.map((record, index) => (
-              <div
-                key={index}
-                className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                <h4 className="font-semibold text-gray-900 mb-3">{record.date}</h4>
-                <div className="space-y-2">
-                  <div>
-                    <span className="text-sm font-medium text-green-700">
-                      ✓ できたこと：
-                    </span>
-                    <p className="text-sm text-gray-700 ml-4">
-                      {record.achievements}
-                    </p>
+                return (
+                  <div key={index} className="aspect-square flex items-center justify-center">
+                    {day && (
+                      <div
+                        className={`w-full h-full flex items-center justify-center text-xs font-medium border ${
+                          isTodayDate
+                            ? "bg-gray-900 text-white border-gray-900"
+                            : hasRecord
+                            ? "bg-gray-300 border-gray-400"
+                            : "border-gray-200"
+                        }`}
+                      >
+                        {day}
+                      </div>
+                    )}
                   </div>
-                  <div>
-                    <span className="text-sm font-medium text-orange-700">
-                      ⚠ 難しかったこと：
-                    </span>
-                    <p className="text-sm text-gray-700 ml-4">
-                      {record.challenges}
-                    </p>
-                  </div>
-                  <div>
-                    <span className="text-sm font-medium text-blue-700">
-                      📝 一言コメント：
-                    </span>
-                    <p className="text-sm text-gray-700 ml-4">{record.notes}</p>
-                  </div>
-                </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 天気データ */}
+      <div className="border-2 border-gray-300">
+        <div className="bg-gray-100 border-b-2 border-gray-300 px-4 py-2">
+          <h2 className="font-bold text-sm">天気・気温（直近7日間）</h2>
+        </div>
+        <div className="p-4">
+          <div className="flex gap-4">
+            {dailyHealthData.slice(0, 7).map((data) => (
+              <div key={data.day} className="text-center border border-gray-300 p-2 flex-1">
+                <p className="text-xs font-bold mb-1">{data.day}日</p>
+                <p className="text-lg mb-1">{getWeatherIcon(data.weather)}</p>
+                <p className="text-sm font-medium">{data.temperature}℃</p>
               </div>
             ))}
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
+
+      {/* AIコメント */}
+      <div className="border-2 border-gray-900 bg-gray-50">
+        <div className="p-4">
+          <div className="flex items-start gap-3">
+            <div className="text-3xl">🐻</div>
+            <div>
+              <p className="text-xs font-bold mb-1">サポートメッセージ</p>
+              <p className="text-sm leading-relaxed">
+                先月に比べて疲労感が安定してきたね。睡眠時間は少し減っているけど、ゲームへの集中が続いているのは素晴らしい！
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 記録一覧 */}
+      <div className="border-2 border-gray-300">
+        <div className="bg-gray-100 border-b-2 border-gray-300 px-4 py-2">
+          <h2 className="font-bold text-sm">日々の記録</h2>
+        </div>
+        <div className="p-4">
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="border-b-2 border-gray-400">
+                <th className="text-left py-2 font-bold">日付</th>
+                <th className="text-left py-2 font-bold">できたこと</th>
+                <th className="text-left py-2 font-bold">難しかったこと</th>
+                <th className="text-left py-2 font-bold">コメント</th>
+              </tr>
+            </thead>
+            <tbody>
+              {records.map((record, index) => (
+                <tr key={index} className="border-b border-gray-300">
+                  <td className="py-2 font-medium">{record.date}</td>
+                  <td className="py-2">{record.achievements}</td>
+                  <td className="py-2">{record.challenges}</td>
+                  <td className="py-2">{record.notes}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }
