@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
@@ -52,6 +52,7 @@ export function PlanChangeForm({
   };
 
   const handleUserCountChange = (count: number) => {
+    console.log("👥 handleUserCountChange called with count:", count);
     setUserCount(count);
     // Initialize user data (simplified for both Focus and Flex)
     const newUsers = Array.from({ length: count }, (_, i) => ({
@@ -62,6 +63,7 @@ export function PlanChangeForm({
       selectedGames: [] as string[],
       backupGame: "",
     }));
+    console.log("👥 Created new users array:", newUsers);
     setUsers(newUsers);
   };
 
@@ -96,6 +98,14 @@ export function PlanChangeForm({
     (currentPlan === "ENTRY" && targetPlan === "FOCUS") ||
     (currentPlan === "FLEX" && targetPlan === "FOCUS") ||
     (currentPlan === "FOCUS" && targetPlan === "FLEX");
+
+  // Auto-initialize users when showUserInfo becomes true
+  useEffect(() => {
+    if (showUserInfo && users.length === 0) {
+      console.log("🔄 Auto-initializing users with count:", userCount);
+      handleUserCountChange(userCount);
+    }
+  }, [showUserInfo]);
 
   // Debug logging
   console.log("🔍 Debug Info:", {
