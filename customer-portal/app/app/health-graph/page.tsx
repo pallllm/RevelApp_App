@@ -17,7 +17,6 @@ import {
   Legend,
   ResponsiveContainer,
   ComposedChart,
-  ReferenceDot,
 } from "recharts";
 import {
   Cloud,
@@ -119,36 +118,30 @@ const users = [
   { id: "3", name: "佐藤 花子" },
 ];
 
-// カスタムドット（気温の折れ線グラフ用）
+// カスタムドット（気温の折れ線グラフ用 - 天気アイコンと気圧変化アイコンを表示）
 const CustomDot = (props: any) => {
   const { cx, cy, payload } = props;
   const weatherData = dailyHealthData.find((d) => d.day === payload.day);
+  const hasPressureChange = pressureChangeDays.includes(payload.day);
 
   return (
     <g>
       <circle cx={cx} cy={cy} r={3} fill="#3b82f6" />
+      {/* 天気アイコン */}
       <foreignObject x={cx - 10} y={cy - 25} width={20} height={20}>
         <div className="flex items-center justify-center">
           {weatherData && getWeatherIcon(weatherData.weather, true)}
         </div>
       </foreignObject>
+      {/* 気圧変化アイコン */}
+      {hasPressureChange && (
+        <foreignObject x={cx - 8} y={cy - 45} width={16} height={16}>
+          <div className="flex items-center justify-center">
+            <Activity className="h-4 w-4 text-red-500" />
+          </div>
+        </foreignObject>
+      )}
     </g>
-  );
-};
-
-// 気圧変化マーカー用カスタムドット
-const PressureMarker = (props: any) => {
-  const { cx, cy, payload } = props;
-  const hasPressureChange = pressureChangeDays.includes(payload.day);
-
-  if (!hasPressureChange) return null;
-
-  return (
-    <foreignObject x={cx - 8} y={cy - 35} width={16} height={16}>
-      <div className="flex items-center justify-center">
-        <Activity className="h-4 w-4 text-red-500" />
-      </div>
-    </foreignObject>
   );
 };
 
@@ -370,21 +363,6 @@ export default function HealthGraphPage() {
                   name="気温(℃)"
                   dot={<CustomDot />}
                 />
-                {/* 気圧変化マーカー */}
-                {pressureChangeDays.map((day) => {
-                  const dataPoint = dailyHealthData.find((d) => d.day === day);
-                  if (!dataPoint) return null;
-                  return (
-                    <ReferenceDot
-                      key={day}
-                      x={day}
-                      y={dataPoint.temperature}
-                      yAxisId="right"
-                      r={0}
-                      shape={<PressureMarker />}
-                    />
-                  );
-                })}
               </ComposedChart>
             </ResponsiveContainer>
           </CardContent>
