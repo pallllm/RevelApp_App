@@ -107,31 +107,9 @@ export default function MembersPage() {
           <CardContent className="pt-6 space-y-6">
             {/* Main Games */}
             <div>
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-semibold text-gray-700">
-                  メインゲーム（{facilitySelectedGames.length}個）
-                </h3>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="gap-2 border-blue-300 hover:bg-blue-50 text-xs"
-                    onClick={() => window.open("/manuals/all", "_blank")}
-                  >
-                    <BookOpen className="h-3 w-3" />
-                    全マニュアル
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="gap-2 border-purple-300 hover:bg-purple-50 text-xs"
-                    onClick={() => window.open("/videos/all", "_blank")}
-                  >
-                    <Video className="h-3 w-3" />
-                    全動画
-                  </Button>
-                </div>
-              </div>
+              <h3 className="text-sm font-semibold text-gray-700 mb-4">
+                メインゲーム（{facilitySelectedGames.length}個）
+              </h3>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
                 {facilitySelectedGames.map((game) => (
                   <div
@@ -139,7 +117,7 @@ export default function MembersPage() {
                     className="p-3 border-2 border-blue-200 bg-white rounded-lg"
                   >
                     <div className="space-y-2">
-                      <div className="relative w-full aspect-video rounded-md overflow-hidden bg-gray-100">
+                      <div className="relative w-full aspect-[4/3] rounded-md overflow-hidden bg-gray-100">
                         <Image
                           src={game!.image}
                           alt={game!.name}
@@ -147,10 +125,32 @@ export default function MembersPage() {
                           className="object-cover"
                         />
                       </div>
-                      <div className="font-semibold text-sm">{game!.name}</div>
+                      <div className="font-semibold text-xs leading-tight">
+                        {game!.name}
+                      </div>
                       <div className="text-xs text-muted-foreground">
                         Lv.{game!.level}
                         {game!.requiresAnyDesk && " *"}
+                      </div>
+                      <div className="flex flex-col gap-1.5 pt-1">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full h-7 gap-1 border-blue-200 hover:bg-blue-50 text-xs px-2"
+                          onClick={() => window.open(`/manuals/${game!.id}`, "_blank")}
+                        >
+                          <BookOpen className="h-3 w-3" />
+                          マニュアル
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full h-7 gap-1 border-purple-200 hover:bg-purple-50 text-xs px-2"
+                          onClick={() => window.open(`/videos/${game!.id}`, "_blank")}
+                        >
+                          <Video className="h-3 w-3" />
+                          動画
+                        </Button>
                       </div>
                     </div>
                   </div>
@@ -167,7 +167,7 @@ export default function MembersPage() {
                 <div className="w-full md:w-1/3 lg:w-1/5">
                   <div className="p-3 border-2 border-orange-200 bg-orange-50/50 rounded-lg">
                     <div className="space-y-2">
-                      <div className="relative w-full aspect-video rounded-md overflow-hidden bg-gray-100">
+                      <div className="relative w-full aspect-[4/3] rounded-md overflow-hidden bg-gray-100">
                         <Image
                           src={facilityBackupGame.image}
                           alt={facilityBackupGame.name}
@@ -175,22 +175,37 @@ export default function MembersPage() {
                           className="object-cover"
                         />
                       </div>
-                      <div className="font-semibold text-sm">
+                      <div className="font-semibold text-xs leading-tight">
                         {facilityBackupGame.name}
                       </div>
                       <div className="text-xs text-muted-foreground">
                         Lv.{facilityBackupGame.level}
-                        {facilityBackupGame.requiresAnyDesk && " *"}
+                      </div>
+                      <div className="flex flex-col gap-1.5 pt-1">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full h-7 gap-1 border-blue-200 hover:bg-blue-50 text-xs px-2"
+                          onClick={() => window.open(`/manuals/${facilityBackupGame.id}`, "_blank")}
+                        >
+                          <BookOpen className="h-3 w-3" />
+                          マニュアル
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full h-7 gap-1 border-purple-200 hover:bg-purple-50 text-xs px-2"
+                          onClick={() => window.open(`/videos/${facilityBackupGame.id}`, "_blank")}
+                        >
+                          <Video className="h-3 w-3" />
+                          動画
+                        </Button>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
             )}
-
-            <p className="text-xs text-muted-foreground">
-              * 印のゲームはAnyDeskによる環境変更作業が必要です
-            </p>
           </CardContent>
         </Card>
       )}
