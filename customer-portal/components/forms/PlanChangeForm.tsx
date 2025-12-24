@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
@@ -140,10 +141,20 @@ export function PlanChangeForm({
                     : "border-gray-200 hover:border-gray-300"
                 } disabled:opacity-50 disabled:cursor-not-allowed`}
               >
-                <div className="font-semibold text-sm">{game.name}</div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  Lv.{game.level}
-                  {game.requiresAnyDesk && " *"}
+                <div className="space-y-2">
+                  <div className="relative w-full aspect-video rounded-md overflow-hidden bg-gray-100">
+                    <Image
+                      src={game.image}
+                      alt={game.name}
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
+                  <div className="font-semibold text-sm">{game.name}</div>
+                  <div className="text-xs text-muted-foreground">
+                    Lv.{game.level}
+                    {game.requiresAnyDesk && " *"}
+                  </div>
                 </div>
               </button>
             ))}

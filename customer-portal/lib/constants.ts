@@ -1,15 +1,15 @@
 // ゲームマスタ
 export const GAMES = [
-  { id: 'gesoten', name: 'ゲソテンバース', level: 1, requiresAnyDesk: true },
-  { id: 'elf1', name: 'エルフの森 レベル1', level: 1, requiresAnyDesk: true },
-  { id: 'elf2', name: 'エルフの森 レベル2', level: 2, requiresAnyDesk: true },
-  { id: 'mcheroes', name: 'マイクリプトヒーローズ', level: 2, requiresAnyDesk: false },
-  { id: 'axie-tri', name: 'Axie トライフォース', level: 2, requiresAnyDesk: false },
-  { id: 'axie-quest', name: 'Axie クエスト', level: 3, requiresAnyDesk: false },
-  { id: 'cryptospells', name: 'クリプトスペルズ', level: 3, requiresAnyDesk: false },
-  { id: 'career', name: 'キャリア乙女サバイバー', level: 3, requiresAnyDesk: true },
-  { id: 'axie-origin', name: 'Axie Origin', level: 4, requiresAnyDesk: false },
-  { id: 'xeno', name: 'XENO', level: 4, requiresAnyDesk: false },
+  { id: 'gesoten', name: 'ゲソテンバース', level: 1, requiresAnyDesk: true, image: '/images/games/gesoten.png' },
+  { id: 'elf1', name: 'エルフの森 レベル1', level: 1, requiresAnyDesk: true, image: '/images/games/elf1.png' },
+  { id: 'elf2', name: 'エルフの森 レベル2', level: 2, requiresAnyDesk: true, image: '/images/games/elf2.png' },
+  { id: 'mcheroes', name: 'マイクリプトヒーローズ', level: 2, requiresAnyDesk: false, image: '/images/games/mcheroes.png' },
+  { id: 'axie-tri', name: 'Axie トライフォース', level: 2, requiresAnyDesk: false, image: '/images/games/axie-tri.png' },
+  { id: 'axie-quest', name: 'Axie クエスト', level: 3, requiresAnyDesk: false, image: '/images/games/axie-quest.png' },
+  { id: 'cryptospells', name: 'クリプトスペルズ', level: 3, requiresAnyDesk: false, image: '/images/games/cryptospells.png' },
+  { id: 'career', name: 'キャリア乙女サバイバー', level: 3, requiresAnyDesk: true, image: '/images/games/career.png' },
+  { id: 'axie-origin', name: 'Axie Origin', level: 4, requiresAnyDesk: false, image: '/images/games/axie-origin.png' },
+  { id: 'xeno', name: 'XENO', level: 4, requiresAnyDesk: false, image: '/images/games/xeno.png' },
 ] as const;
 
 // プラン

@@ -1,13 +1,15 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { GAMES, Plan } from "@/lib/constants";
-import { Send, AlertCircle } from "lucide-react";
+import { calculateEffectiveDate, isAfterDeadline } from "@/lib/utils";
+import { Send, AlertCircle, Calendar, MessageCircle } from "lucide-react";
 
 interface GameChangeFormProps {
   currentPlan: Plan;
@@ -20,6 +22,9 @@ export function GameChangeForm({
   onSubmit,
   onCancel,
 }: GameChangeFormProps) {
+  // 現在契約中のゲーム（初期値：仮データ - 実際はAPIから取得）
+  const activeGames = ["gesoten", "elf1", "mcheroes"]; // TODO: APIから取得
+
   const [userCount, setUserCount] = useState<string>("");
   const [userInitials, setUserInitials] = useState<string>("");
   const [currentGames, setCurrentGames] = useState<string[]>([]);
@@ -119,44 +124,66 @@ export function GameChangeForm({
           <span className="text-red-500">*</span>
         </label>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-          {GAMES.map((game) => (
-            <div
-              key={game.id}
-              className={`p-3 border-2 rounded-lg cursor-pointer transition-all ${
-                currentGames.includes(game.id)
-                  ? "border-red-500 bg-red-50"
-                  : "border-gray-200 hover:border-gray-300"
-              }`}
-              onClick={() => handleCurrentGameToggle(game.id)}
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="font-semibold text-sm">{game.name}</div>
-                  <div className="text-xs text-muted-foreground mt-1">
-                    Lv.{game.level}
-                    {game.requiresAnyDesk && " *"}
+          {GAMES.map((game) => {
+            const isActive = activeGames.includes(game.id);
+            const isSelectedToRemove = currentGames.includes(game.id);
+
+            return (
+              <div
+                key={game.id}
+                className={`p-3 border-2 rounded-lg cursor-pointer transition-all ${
+                  isSelectedToRemove
+                    ? "border-red-500 bg-red-50"
+                    : isActive
+                    ? "border-blue-500 bg-blue-50"
+                    : "border-gray-200 hover:border-gray-300 opacity-40"
+                }`}
+                onClick={() => isActive && handleCurrentGameToggle(game.id)}
+              >
+                <div className="space-y-2">
+                  <div className="relative w-full aspect-video rounded-md overflow-hidden bg-gray-100">
+                    <Image
+                      src={game.image}
+                      alt={game.name}
+                      fill
+                      className="object-cover"
+                    />
+                    {isActive && !isSelectedToRemove && (
+                      <div className="absolute top-1 right-1 bg-blue-500 text-white text-xs px-2 py-0.5 rounded">
+                        契約中
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="font-semibold text-sm">{game.name}</div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        Lv.{game.level}
+                        {game.requiresAnyDesk && " *"}
+                      </div>
+                    </div>
+                    {isSelectedToRemove && (
+                      <div className="ml-2">
+                        <div className="w-5 h-5 rounded-full bg-red-500 flex items-center justify-center">
+                          <svg
+                            className="w-3 h-3 text-white"
+                            fill="none"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path d="M5 13l4 4L19 7"></path>
+                          </svg>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
-                {currentGames.includes(game.id) && (
-                  <div className="ml-2">
-                    <div className="w-5 h-5 rounded-full bg-red-500 flex items-center justify-center">
-                      <svg
-                        className="w-3 h-3 text-white"
-                        fill="none"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path d="M5 13l4 4L19 7"></path>
-                      </svg>
-                    </div>
-                  </div>
-                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
@@ -196,31 +223,41 @@ export function GameChangeForm({
                 }
               }}
             >
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="font-semibold text-sm">{game.name}</div>
-                  <div className="text-xs text-muted-foreground mt-1">
-                    Lv.{game.level}
-                    {game.requiresAnyDesk && " *"}
-                  </div>
+              <div className="space-y-2">
+                <div className="relative w-full aspect-video rounded-md overflow-hidden bg-gray-100">
+                  <Image
+                    src={game.image}
+                    alt={game.name}
+                    fill
+                    className="object-cover"
+                  />
                 </div>
-                {newGames.includes(game.id) && (
-                  <div className="ml-2">
-                    <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
-                      <svg
-                        className="w-3 h-3 text-white"
-                        fill="none"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path d="M5 13l4 4L19 7"></path>
-                      </svg>
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="font-semibold text-sm">{game.name}</div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      Lv.{game.level}
+                      {game.requiresAnyDesk && " *"}
                     </div>
                   </div>
-                )}
+                  {newGames.includes(game.id) && (
+                    <div className="ml-2">
+                      <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
+                        <svg
+                          className="w-3 h-3 text-white"
+                          fill="none"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path d="M5 13l4 4L19 7"></path>
+                        </svg>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           ))}
@@ -240,6 +277,39 @@ export function GameChangeForm({
           onChange={(e) => setNotes(e.target.value)}
         />
       </div>
+
+      {/* Effective Date */}
+      <div className="border rounded-lg p-4 bg-gradient-to-r from-purple-50 to-blue-50">
+        <div className="flex items-start gap-3">
+          <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center flex-shrink-0">
+            <Calendar className="h-5 w-5 text-white" />
+          </div>
+          <div className="flex-1">
+            <p className="font-semibold">変更反映日</p>
+            <p className="text-lg font-bold text-purple-700 mt-1">
+              {calculateEffectiveDate()}
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              毎月15日までの申請は、翌月1日から変更が反映されます
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Chat Support Notice (if after deadline) */}
+      {isAfterDeadline() && (
+        <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+          <div className="flex gap-3">
+            <MessageCircle className="h-5 w-5 text-orange-600 flex-shrink-0 mt-0.5" />
+            <div className="text-sm text-orange-900">
+              <p className="font-semibold mb-1">急ぎの変更をご希望の場合</p>
+              <p>
+                期限を過ぎていますが、急ぎで変更したい場合はサポートページのチャットからご連絡ください。
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Actions */}
       <div className="flex gap-3 pt-4">
