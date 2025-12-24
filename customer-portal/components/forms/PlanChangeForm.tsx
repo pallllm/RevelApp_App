@@ -52,7 +52,6 @@ export function PlanChangeForm({
   };
 
   const handleUserCountChange = (count: number) => {
-    console.log("👥 handleUserCountChange called with count:", count);
     setUserCount(count);
     // Initialize user data (simplified for both Focus and Flex)
     const newUsers = Array.from({ length: count }, (_, i) => ({
@@ -63,7 +62,6 @@ export function PlanChangeForm({
       selectedGames: [] as string[],
       backupGame: "",
     }));
-    console.log("👥 Created new users array:", newUsers);
     setUsers(newUsers);
   };
 
@@ -72,11 +70,9 @@ export function PlanChangeForm({
 
     // Double-check validation before submitting
     if (!isFormValid()) {
-      console.log("⛔ Form submission blocked: Form is not valid");
       return;
     }
 
-    console.log("✅ Form is valid, proceeding with submission");
     onSubmit({
       currentPlan,
       targetPlan,
@@ -102,46 +98,24 @@ export function PlanChangeForm({
   // Auto-initialize users when showUserInfo becomes true
   useEffect(() => {
     if (showUserInfo && users.length === 0 && userCount > 0) {
-      console.log("🔄 Auto-initializing users with count:", userCount);
       handleUserCountChange(userCount);
     }
   }, [showUserInfo, userCount]);
 
-  // Debug logging
-  console.log("🔍 Debug Info:", {
-    currentPlan,
-    targetPlan,
-    showUserInfo,
-    usersLength: users.length,
-  });
-
   // Check if form is valid for submission
   const isFormValid = () => {
-    if (!targetPlan) {
-      console.log("❌ Invalid: No target plan");
-      return false;
-    }
+    if (!targetPlan) return false;
 
     // Entry/Flex plan validation
     if (targetPlan === "ENTRY" || targetPlan === "FLEX") {
-      if (selectedGames.length !== getMaxGames()) {
-        console.log("❌ Invalid: Wrong number of games");
-        return false;
-      }
-      if (!backupGame) {
-        console.log("❌ Invalid: No backup game");
-        return false;
-      }
+      if (selectedGames.length !== getMaxGames()) return false;
+      if (!backupGame) return false;
     }
 
     // User info validation (if required)
     if (showUserInfo) {
-      console.log("🔍 Validating user info, users.length:", users.length);
       // If user info is required, must have selected user count
-      if (users.length === 0) {
-        console.log("❌ Invalid: No users selected");
-        return false;
-      }
+      if (users.length === 0) return false;
 
       for (const user of users) {
         // Common fields for both Focus and Flex
@@ -155,7 +129,6 @@ export function PlanChangeForm({
       }
     }
 
-    console.log("✅ Form is valid");
     return true;
   };
 
@@ -248,19 +221,9 @@ export function PlanChangeForm({
         </div>
       )}
 
-      {/* DEBUG: Show showUserInfo value */}
-      <div className="p-4 bg-yellow-100 border-2 border-yellow-500 rounded">
-        <strong>DEBUG:</strong> showUserInfo = {String(showUserInfo)}
-        <br />
-        targetPlan = {targetPlan || "null"}
-        <br />
-        currentPlan = {currentPlan}
-      </div>
-
       {/* User Count (for Flex and Focus) */}
       {showUserInfo && (
         <div>
-          {console.log("✅ Rendering user count section")}
           <label className="text-sm font-medium mb-2 block">
             利用者人数 <span className="text-red-500">*</span>
           </label>
