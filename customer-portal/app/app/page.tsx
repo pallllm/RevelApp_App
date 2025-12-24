@@ -355,57 +355,38 @@ export default function HomePage() {
 
         {/* Right: Calendar */}
         <Card className="shadow-lg border-0">
-          <CardHeader className="border-b bg-gradient-to-r from-purple-50 to-indigo-50">
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2 text-purple-900">
-                <CalendarIcon className="h-5 w-5 text-purple-600" />
-                カレンダー
-              </CardTitle>
-              <div className="flex items-center gap-2">
-                <button className="px-3 py-1 text-sm rounded-md bg-purple-600 text-white font-medium">
-                  Month
+          <CardContent className="pt-6">
+            {/* Month/Year header */}
+            <div className="flex items-center justify-between mb-8">
+              <h3 className="text-xl font-bold text-gray-800">
+                {selectedYear}年{selectedMonth}月
+              </h3>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={handlePreviousMonth}
+                  className="p-1.5 hover:bg-purple-100 rounded-full transition-colors"
+                >
+                  <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
                 </button>
-                <button className="px-3 py-1 text-sm rounded-md hover:bg-purple-100 text-gray-600">
-                  Week
-                </button>
-                <button className="px-3 py-1 text-sm rounded-md hover:bg-purple-100 text-gray-600">
-                  Year
+                <button
+                  onClick={handleNextMonth}
+                  className="p-1.5 hover:bg-purple-100 rounded-full transition-colors"
+                >
+                  <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
                 </button>
               </div>
             </div>
-          </CardHeader>
-          <CardContent className="pt-6">
-            {/* Month/Year header */}
-            <div className="flex items-center justify-between mb-6">
-              <button
-                onClick={handlePreviousMonth}
-                className="p-2 hover:bg-purple-100 rounded-lg transition-colors"
-              >
-                <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-              </button>
-              <h3 className="text-lg font-bold text-gray-900">
-                {selectedYear}年{selectedMonth}月
-              </h3>
-              <button
-                onClick={handleNextMonth}
-                className="p-2 hover:bg-purple-100 rounded-lg transition-colors"
-              >
-                <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </button>
-            </div>
 
             {/* Weekday headers */}
-            <div className="grid grid-cols-7 gap-2 mb-2">
-              {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day, i) => (
+            <div className="grid grid-cols-7 gap-3 mb-4">
+              {["M", "T", "W", "T", "F", "S", "S"].map((day, i) => (
                 <div
-                  key={day}
-                  className={`text-center text-xs font-semibold py-2 ${
-                    i === 0 ? "text-red-500" : i === 6 ? "text-blue-500" : "text-gray-500"
-                  }`}
+                  key={i}
+                  className="text-center text-xs font-medium text-gray-400"
                 >
                   {day}
                 </div>
@@ -413,7 +394,7 @@ export default function HomePage() {
             </div>
 
             {/* Calendar days */}
-            <div className="grid grid-cols-7 gap-2">
+            <div className="grid grid-cols-7 gap-3 mb-8">
               {calendarDays.map((day, index) => {
                 const dateInfo = day ? getDateInfo(day) : null;
                 const isTodayDate = isCurrentMonth && day === today.getDate();
@@ -421,40 +402,69 @@ export default function HomePage() {
                 return (
                   <div
                     key={index}
-                    className={`aspect-square flex flex-col items-center justify-center rounded-lg text-base relative transition-all ${
-                      !day
-                        ? ""
-                        : isTodayDate
-                        ? "bg-indigo-600 text-white font-semibold shadow-md"
-                        : dateInfo
-                        ? "bg-gradient-to-br from-indigo-100 to-purple-100 text-indigo-700 font-medium cursor-pointer hover:shadow-sm"
-                        : "text-gray-700 hover:bg-gray-50 cursor-pointer"
-                    }`}
+                    className="aspect-square flex items-center justify-center"
                   >
                     {day && (
-                      <>
-                        <span className={isTodayDate ? "text-white" : ""}>{day}</span>
-                        {dateInfo && !isTodayDate && (
-                          <div className="absolute bottom-1 w-1.5 h-1.5 rounded-full bg-indigo-500" />
-                        )}
-                      </>
+                      <button
+                        className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium transition-all ${
+                          isTodayDate
+                            ? "bg-gradient-to-br from-purple-500 to-pink-500 text-white shadow-lg"
+                            : dateInfo
+                            ? "bg-gradient-to-br from-purple-400 to-pink-400 text-white shadow-md hover:shadow-lg"
+                            : "text-gray-700 hover:bg-gray-100"
+                        }`}
+                      >
+                        {day}
+                      </button>
                     )}
                   </div>
                 );
               })}
             </div>
 
-            {/* Legend */}
-            <div className="mt-6 space-y-2 pt-4 border-t">
-              <p className="text-xs font-semibold text-gray-600 mb-3">重要な日程</p>
-              {importantDates.map((item, index) => (
-                <div key={index} className="flex items-center gap-3 text-sm p-2 rounded-lg hover:bg-indigo-50 transition-colors">
-                  <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center text-indigo-700 font-bold text-xs shadow-sm">
-                    {item.date}
+            {/* Scheduled section */}
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="text-lg font-bold text-gray-800">Scheduled</h4>
+                <button className="text-sm text-purple-600 hover:text-purple-700 font-medium">
+                  View all
+                </button>
+              </div>
+              <div className="space-y-3">
+                {importantDates.map((item, index) => (
+                  <div
+                    key={index}
+                    className="flex items-start gap-3 p-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors"
+                  >
+                    <div
+                      className={`flex-shrink-0 px-3 py-1 rounded-full text-xs font-semibold text-white ${
+                        item.type === "deadline"
+                          ? "bg-gradient-to-r from-pink-400 to-pink-500"
+                          : item.type === "billing"
+                          ? "bg-gradient-to-r from-purple-400 to-purple-500"
+                          : "bg-gradient-to-r from-blue-400 to-blue-500"
+                      }`}
+                    >
+                      {item.type === "deadline" && "締切"}
+                      {item.type === "billing" && "請求"}
+                      {item.type === "maintenance" && "メンテ"}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-gray-800 mb-0.5">
+                        {item.title}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {selectedMonth}月{item.date}日
+                      </p>
+                    </div>
+                    <button className="text-gray-400 hover:text-gray-600">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                      </svg>
+                    </button>
                   </div>
-                  <span className="text-gray-700">{item.title}</span>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </CardContent>
         </Card>
