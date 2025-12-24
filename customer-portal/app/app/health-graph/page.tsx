@@ -179,8 +179,9 @@ export default function HealthGraphPage() {
   return (
     <div className="max-w-[594mm] mx-auto bg-white p-8 space-y-6">
       {/* ヘッダー */}
-      <div className="bg-white border-b-2 border-blue-500 pb-4">
-        <h1 className="text-3xl font-bold text-gray-900">体調・行動ダッシュボード</h1>
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold tracking-tight text-gray-900">体調・行動ダッシュボード</h1>
+        <p className="text-gray-600 mt-1">日々の体調変化とゲームプレイ記録を確認できます</p>
         <div className="flex gap-4 items-center mt-4">
           <div>
             <p className="text-sm text-gray-600 mb-1">利用者</p>

@@ -82,14 +82,14 @@ export default function MembersPage() {
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+          <h1 className="text-3xl font-bold tracking-tight text-gray-900">
             利用者管理
           </h1>
-          <p className="text-muted-foreground mt-2">
+          <p className="text-gray-600 mt-1">
             施設の利用者情報を管理できます
           </p>
         </div>
-        <Button className="gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700">
+        <Button className="gap-2 bg-blue-600 hover:bg-blue-700">
           <UserPlus className="h-4 w-4" />
           利用者追加申請
         </Button>
@@ -97,10 +97,10 @@ export default function MembersPage() {
 
       {/* Facility Game Section (Entry/Flexible plans only) */}
       {(currentPlan === "entry" || currentPlan === "flexible") && (
-        <Card className="shadow-lg border-0 bg-gradient-to-br from-blue-50 to-purple-50">
-          <CardHeader className="border-b bg-gradient-to-r from-blue-50 to-cyan-50">
-            <CardTitle className="flex items-center gap-2 text-blue-900">
-              <Gamepad2 className="h-5 w-5 text-blue-600" />
+        <Card className="shadow-sm border border-gray-200 bg-blue-50/30">
+          <CardHeader className="border-b bg-blue-50/50">
+            <CardTitle className="flex items-center gap-2 text-gray-900 text-base">
+              <Gamepad2 className="h-5 w-5 text-blue-500" />
               事業所選択ゲーム
             </CardTitle>
           </CardHeader>
@@ -211,9 +211,9 @@ export default function MembersPage() {
       )}
 
       {/* Members List */}
-      <Card className="shadow-lg border-0">
-        <CardHeader className="border-b bg-gradient-to-r from-purple-50 to-blue-50">
-          <CardTitle className="text-purple-900">利用者一覧</CardTitle>
+      <Card className="shadow-sm border border-gray-200">
+        <CardHeader className="border-b bg-blue-50/50">
+          <CardTitle className="text-gray-900 text-base">利用者一覧</CardTitle>
         </CardHeader>
         <CardContent className="pt-6">
           <div className="space-y-4">
@@ -232,7 +232,7 @@ export default function MembersPage() {
                   {/* Left: Avatar and Info */}
                   <div className="flex items-center gap-4">
                     {/* Initials Avatar */}
-                    <div className="h-14 w-14 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white text-lg font-bold shadow-md">
+                    <div className="h-14 w-14 rounded-full bg-blue-500 flex items-center justify-center text-white text-lg font-bold shadow-sm">
                       {member.initials}
                     </div>
 

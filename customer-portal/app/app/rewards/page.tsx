@@ -125,9 +125,9 @@ export default function RewardsPage() {
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">工賃管理</h1>
-        <p className="text-muted-foreground">
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold tracking-tight text-gray-900">工賃管理</h1>
+        <p className="text-gray-600 mt-1">
           月次工賃の確認と履歴を管理できます
         </p>
       </div>

@@ -167,20 +167,20 @@ export default function HomePage() {
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold tracking-tight text-gray-900">
           ホーム
         </h1>
-        <p className="text-muted-foreground mt-2">
+        <p className="text-gray-600 mt-1">
           施設の運営状況を一目で確認できます
         </p>
       </div>
 
       {/* Announcements Block */}
-      <Card className="shadow-lg border-0">
-        <CardHeader className="border-b bg-gradient-to-r from-purple-50 to-blue-50">
-          <CardTitle className="flex items-center gap-2 text-purple-900">
-            <Bell className="h-5 w-5 text-purple-600" />
+      <Card className="shadow-sm border border-gray-200">
+        <CardHeader className="border-b bg-blue-50/50">
+          <CardTitle className="flex items-center gap-2 text-gray-900 text-base">
+            <Bell className="h-5 w-5 text-blue-500" />
             お知らせ
           </CardTitle>
         </CardHeader>
@@ -257,16 +257,16 @@ export default function HomePage() {
         />
 
         {/* Center: Current Plan */}
-        <Card className="shadow-lg border-0">
+        <Card className="shadow-sm border border-gray-200">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
-                  <FileEdit className="h-5 w-5 text-white" />
+              <div className="flex items-center gap-3">
+                <div className="h-12 w-12 rounded-xl bg-blue-100 flex items-center justify-center">
+                  <FileEdit className="h-6 w-6 text-blue-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">契約プラン</p>
-                  <p className="text-lg font-bold">{currentPlan}</p>
+                  <p className="text-sm text-gray-600">契約プラン</p>
+                  <p className="text-lg font-bold text-gray-900">{currentPlan}</p>
                 </div>
               </div>
             </div>
@@ -274,20 +274,20 @@ export default function HomePage() {
         </Card>
 
         {/* Right: Next Action */}
-        <Card className="shadow-lg border-0 bg-gradient-to-br from-orange-50 to-red-50">
+        <Card className="shadow-sm border border-gray-200 bg-orange-50/30">
           <CardContent className="pt-6">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center">
-                <CalendarIcon className="h-5 w-5 text-white" />
+            <div className="flex items-center gap-3 mb-2">
+              <div className="h-12 w-12 rounded-xl bg-orange-100 flex items-center justify-center">
+                <CalendarIcon className="h-6 w-6 text-orange-600" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">次回アクション</p>
-                <p className="text-lg font-bold text-orange-900">
+                <p className="text-sm text-gray-600">次回アクション</p>
+                <p className="text-lg font-bold text-gray-900">
                   変更申請締切
                 </p>
               </div>
             </div>
-            <p className="text-sm text-orange-700 mt-2">
+            <p className="text-sm text-gray-700 mt-2">
               {nextDeadline}まで
             </p>
           </CardContent>
@@ -297,10 +297,10 @@ export default function HomePage() {
       {/* Main Information Area (2 Columns) */}
       <div className="grid gap-4 md:grid-cols-2">
         {/* Left: Continuation Period & Wage Phase */}
-        <Card className="shadow-lg border-0">
-          <CardHeader className="border-b bg-gradient-to-r from-blue-50 to-cyan-50">
-            <CardTitle className="flex items-center gap-2 text-blue-900">
-              <TrendingUp className="h-5 w-5 text-blue-600" />
+        <Card className="shadow-sm border border-gray-200">
+          <CardHeader className="border-b bg-blue-50/50">
+            <CardTitle className="flex items-center gap-2 text-gray-900 text-base">
+              <TrendingUp className="h-5 w-5 text-blue-500" />
               継続期間と工賃フェーズ
             </CardTitle>
           </CardHeader>
@@ -354,27 +354,27 @@ export default function HomePage() {
         </Card>
 
         {/* Right: Calendar */}
-        <Card className="shadow-lg border-0">
+        <Card className="shadow-sm border border-gray-200">
           <CardContent className="pt-6">
             {/* Month/Year header */}
-            <div className="flex items-center justify-between mb-8">
-              <h3 className="text-xl font-bold text-gray-800">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-bold text-gray-900">
                 {selectedYear}年{selectedMonth}月
               </h3>
               <div className="flex items-center gap-1">
                 <button
                   onClick={handlePreviousMonth}
-                  className="p-1.5 hover:bg-purple-100 rounded-full transition-colors"
+                  className="p-1.5 hover:bg-blue-100 rounded-full transition-colors"
                 >
-                  <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                   </svg>
                 </button>
                 <button
                   onClick={handleNextMonth}
-                  className="p-1.5 hover:bg-purple-100 rounded-full transition-colors"
+                  className="p-1.5 hover:bg-blue-100 rounded-full transition-colors"
                 >
-                  <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
                 </button>
