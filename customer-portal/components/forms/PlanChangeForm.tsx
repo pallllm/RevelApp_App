@@ -11,11 +11,6 @@ import { IconTile } from "@/components/ui/icon-tile";
 import {
   PLANS,
   GAMES,
-  AGE_BANDS,
-  ATTENDANCE_DAYS,
-  SHEET_TYPES,
-  INTRODUCTION_REASONS,
-  USAGE_GOALS,
   Plan,
 } from "@/lib/constants";
 import { Gamepad2, Users, Send } from "lucide-react";
@@ -58,19 +53,14 @@ export function PlanChangeForm({
 
   const handleUserCountChange = (count: number) => {
     setUserCount(count);
-    // Initialize user data (simplified for Focus plan)
+    // Initialize user data (simplified for both Focus and Flex)
     const newUsers = Array.from({ length: count }, (_, i) => ({
       id: i,
       initials: "",
+      diagnosis: "",
+      sheetType: "NORMAL" as const,
       selectedGames: [] as string[],
       backupGame: "",
-      sheetType: "NORMAL" as const,
-      // Fields for Flex plan only
-      age: "",
-      diagnosis: "",
-      attendanceDays: "",
-      reasons: [] as string[],
-      goals: [] as string[],
     }));
     setUsers(newUsers);
   };
@@ -98,6 +88,33 @@ export function PlanChangeForm({
     (currentPlan === "ENTRY" && targetPlan === "FOCUS") ||
     (currentPlan === "FLEX" && targetPlan === "FOCUS") ||
     (currentPlan === "FOCUS" && targetPlan === "FLEX");
+
+  // Check if form is valid for submission
+  const isFormValid = () => {
+    if (!targetPlan) return false;
+
+    // Entry/Flex plan validation
+    if (targetPlan === "ENTRY" || targetPlan === "FLEX") {
+      if (selectedGames.length !== getMaxGames()) return false;
+      if (!backupGame) return false;
+    }
+
+    // User info validation (if required)
+    if (showUserInfo && users.length > 0) {
+      for (const user of users) {
+        // Common fields for both Focus and Flex
+        if (!user.initials || !user.sheetType) return false;
+
+        // Focus-specific validation
+        if (targetPlan === "FOCUS") {
+          if (user.selectedGames.length !== 2) return false;
+          if (!user.backupGame) return false;
+        }
+      }
+    }
+
+    return true;
+  };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -218,7 +235,7 @@ export function PlanChangeForm({
             <div key={user.id} className="p-4 border rounded-lg space-y-4">
               <h4 className="font-semibold">利用者 {index + 1}</h4>
 
-              {/* Focus plan - simplified form */}
+              {/* Focus plan - with game selection */}
               {targetPlan === "FOCUS" ? (
                 <>
                   <div>
@@ -350,45 +367,22 @@ export function PlanChangeForm({
                   </div>
                 </>
               ) : (
-                /* Flex plan - detailed form */
+                /* Flex plan - simplified form */
                 <>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium mb-1 block">
-                        イニシャル <span className="text-red-500">*</span>
-                      </label>
-                      <Input
-                        placeholder="例：T.K"
-                        value={user.initials}
-                        onChange={(e) => {
-                          const newUsers = [...users];
-                          newUsers[index].initials = e.target.value;
-                          setUsers(newUsers);
-                        }}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium mb-1 block">
-                        年齢 <span className="text-red-500">*</span>
-                      </label>
-                      <Select
-                        value={user.age}
-                        onChange={(e) => {
-                          const newUsers = [...users];
-                          newUsers[index].age = e.target.value;
-                          setUsers(newUsers);
-                        }}
-                        required
-                      >
-                        <option value="">選択</option>
-                        {AGE_BANDS.map((age) => (
-                          <option key={age} value={age}>
-                            {age}
-                          </option>
-                        ))}
-                      </Select>
-                    </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">
+                      イニシャル <span className="text-red-500">*</span>
+                    </label>
+                    <Input
+                      placeholder="例：T.K"
+                      value={user.initials}
+                      onChange={(e) => {
+                        const newUsers = [...users];
+                        newUsers[index].initials = e.target.value;
+                        setUsers(newUsers);
+                      }}
+                      required
+                    />
                   </div>
 
                   <div>
@@ -404,82 +398,6 @@ export function PlanChangeForm({
                         setUsers(newUsers);
                       }}
                     />
-                  </div>
-
-                  <div>
-                    <label className="text-sm font-medium mb-1 block">
-                      1週間の通所日数 <span className="text-red-500">*</span>
-                    </label>
-                    <Select
-                      value={user.attendanceDays}
-                      onChange={(e) => {
-                        const newUsers = [...users];
-                        newUsers[index].attendanceDays = e.target.value;
-                        setUsers(newUsers);
-                      }}
-                      required
-                    >
-                      <option value="">選択</option>
-                      {ATTENDANCE_DAYS.map((day) => (
-                        <option key={day} value={day}>
-                          {day}
-                        </option>
-                      ))}
-                    </Select>
-                  </div>
-
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">
-                      導入理由（複数選択可）
-                    </label>
-                    <div className="space-y-2">
-                      {INTRODUCTION_REASONS.map((reason) => (
-                        <Checkbox
-                          key={reason}
-                          id={`reason-${index}-${reason}`}
-                          label={reason}
-                          checked={user.reasons.includes(reason)}
-                          onChange={(e) => {
-                            const newUsers = [...users];
-                            if (e.target.checked) {
-                              newUsers[index].reasons.push(reason);
-                            } else {
-                              newUsers[index].reasons = newUsers[index].reasons.filter(
-                                (r: string) => r !== reason
-                              );
-                            }
-                            setUsers(newUsers);
-                          }}
-                        />
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">
-                      ご利用の目的（複数選択可）
-                    </label>
-                    <div className="space-y-2">
-                      {USAGE_GOALS.map((goal) => (
-                        <Checkbox
-                          key={goal}
-                          id={`goal-${index}-${goal}`}
-                          label={goal}
-                          checked={user.goals.includes(goal)}
-                          onChange={(e) => {
-                            const newUsers = [...users];
-                            if (e.target.checked) {
-                              newUsers[index].goals.push(goal);
-                            } else {
-                              newUsers[index].goals = newUsers[index].goals.filter(
-                                (g: string) => g !== goal
-                              );
-                            }
-                            setUsers(newUsers);
-                          }}
-                        />
-                      ))}
-                    </div>
                   </div>
 
                   <div>
@@ -524,7 +442,7 @@ export function PlanChangeForm({
 
       {/* Actions */}
       <div className="flex gap-3 pt-4">
-        <Button type="submit" className="gap-2" disabled={!targetPlan}>
+        <Button type="submit" className="gap-2" disabled={!isFormValid()}>
           <Send className="h-4 w-4" />
           申請を送信
         </Button>
