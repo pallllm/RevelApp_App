@@ -171,13 +171,31 @@ export function PlanChangeForm({
           <label className="text-sm font-medium mb-2 block">
             予備ゲーム（1個） <span className="text-red-500">*</span>
           </label>
+          {targetPlan === "FOCUS" ? (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-2">
+              <p className="text-xs text-blue-900">
+                利用者が選択したゲーム以外から1個選択してください
+              </p>
+            </div>
+          ) : null}
           <Select
             value={backupGame}
             onChange={(e) => setBackupGame(e.target.value)}
             required
           >
             <option value="">選択してください</option>
-            {GAMES.filter((g) => !selectedGames.includes(g.id)).map((game) => (
+            {GAMES.filter((g) => {
+              // Entry/Flexの場合は selectedGames から除外
+              if (targetPlan === "ENTRY" || targetPlan === "FLEX") {
+                return !selectedGames.includes(g.id);
+              }
+              // Focusの場合は各利用者の selectedGames から除外
+              if (targetPlan === "FOCUS") {
+                const allUserGames = users.flatMap((u) => u.selectedGames || []);
+                return !allUserGames.includes(g.id);
+              }
+              return true;
+            }).map((game) => (
               <option key={game.id} value={game.id}>
                 {game.name} (Lv.{game.level})
               </option>
@@ -377,34 +395,62 @@ export function PlanChangeForm({
               {/* Game selection for Focus plan */}
               {targetPlan === "FOCUS" && (
                 <div>
-                  <label className="text-sm font-medium mb-2 block">
-                    この利用者のゲーム（1〜2個） <span className="text-red-500">*</span>
+                  <label className="text-sm font-medium mb-3 block">
+                    この利用者のゲーム（2個選択）
+                    <span className="text-red-500">*</span>
+                    <span className="ml-2 text-xs font-normal text-muted-foreground">
+                      （{user.selectedGames.length}/2個選択済み）
+                    </span>
                   </label>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                    {GAMES.map((game) => (
-                      <Checkbox
-                        key={game.id}
-                        id={`game-${index}-${game.id}`}
-                        label={`${game.name} (Lv.${game.level})`}
-                        checked={user.selectedGames.includes(game.id)}
-                        onChange={(e) => {
-                          const newUsers = [...users];
-                          if (e.target.checked && user.selectedGames.length < 2) {
-                            newUsers[index].selectedGames.push(game.id);
-                          } else if (!e.target.checked) {
-                            newUsers[index].selectedGames = user.selectedGames.filter(
-                              (g: string) => g !== game.id
-                            );
-                          }
-                          setUsers(newUsers);
-                        }}
-                        disabled={
-                          !user.selectedGames.includes(game.id) &&
-                          user.selectedGames.length >= 2
-                        }
-                      />
-                    ))}
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                    {GAMES.map((game) => {
+                      const isSelected = user.selectedGames.includes(game.id);
+                      const isDisabled = !isSelected && user.selectedGames.length >= 2;
+
+                      return (
+                        <button
+                          key={game.id}
+                          type="button"
+                          onClick={() => {
+                            const newUsers = [...users];
+                            if (isSelected) {
+                              newUsers[index].selectedGames = user.selectedGames.filter(
+                                (g: string) => g !== game.id
+                              );
+                            } else if (user.selectedGames.length < 2) {
+                              newUsers[index].selectedGames = [...user.selectedGames, game.id];
+                            }
+                            setUsers(newUsers);
+                          }}
+                          disabled={isDisabled}
+                          className={`p-3 border-2 rounded-lg text-left transition-all ${
+                            isSelected
+                              ? "border-primary bg-primary/10"
+                              : "border-gray-200 hover:border-gray-300"
+                          } ${isDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
+                        >
+                          <div className="space-y-2">
+                            <div className="relative w-full aspect-video rounded-md overflow-hidden bg-gray-100">
+                              <Image
+                                src={game.image}
+                                alt={game.name}
+                                fill
+                                className="object-cover"
+                              />
+                            </div>
+                            <div className="font-semibold text-sm">{game.name}</div>
+                            <div className="text-xs text-muted-foreground">
+                              Lv.{game.level}
+                              {game.requiresAnyDesk && " *"}
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
                   </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    ※ 必ず2個のゲームを選択してください
+                  </p>
                 </div>
               )}
             </div>
