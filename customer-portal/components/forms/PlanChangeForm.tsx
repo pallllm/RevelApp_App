@@ -100,7 +100,10 @@ export function PlanChangeForm({
     }
 
     // User info validation (if required)
-    if (showUserInfo && users.length > 0) {
+    if (showUserInfo) {
+      // If user info is required, must have selected user count
+      if (users.length === 0) return false;
+
       for (const user of users) {
         // Common fields for both Focus and Flex
         if (!user.initials || !user.sheetType) return false;
