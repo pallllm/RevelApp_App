@@ -23,6 +23,17 @@ import {
   Send,
   Clock,
 } from "lucide-react";
+import {
+  PlanChangeForm,
+  GameChangeForm,
+  UserAddForm,
+  UserRemoveForm,
+  PcAddForm,
+  PcChangeForm,
+  PaymentChangeForm,
+  WageAccountForm,
+  OtherInquiryForm,
+} from "@/components/forms";
 
 // 申請タイプの定義
 const REQUEST_TYPES = {
@@ -312,21 +323,108 @@ export default function RequestsPage() {
         </Card>
       )}
 
-      {/* Step 4: Form (Placeholder for now) */}
-      {step === 'form' && selectedRequest && (
+      {/* Step 4: Form */}
+      {step === 'form' && selectedRequest && selectedPlan && (
         <Card>
           <CardHeader>
             <CardTitle>
-              {REQUEST_TYPES[selectedPlan!].find((t) => t.id === selectedRequest)?.title}
+              {REQUEST_TYPES[selectedPlan].find((t) => t.id === selectedRequest)?.title}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-center py-8">
-              <p className="text-muted-foreground mb-4">
-                フォームの詳細実装は次のステップで行います
-              </p>
-              <Button onClick={resetForm}>最初から入力し直す</Button>
-            </div>
+            {selectedRequest === 'plan-change' && (
+              <PlanChangeForm
+                currentPlan={selectedPlan}
+                onSubmit={(data) => {
+                  console.log('Plan change submitted:', data);
+                  alert('プラン変更申請を送信しました');
+                  resetForm();
+                }}
+                onCancel={resetForm}
+              />
+            )}
+            {selectedRequest === 'game-change' && (
+              <GameChangeForm
+                currentPlan={selectedPlan}
+                onSubmit={(data) => {
+                  console.log('Game change submitted:', data);
+                  alert('ゲーム変更申請を送信しました');
+                  resetForm();
+                }}
+                onCancel={resetForm}
+              />
+            )}
+            {selectedRequest === 'user-add' && (
+              <UserAddForm
+                currentPlan={selectedPlan}
+                onSubmit={(data) => {
+                  console.log('User add submitted:', data);
+                  alert('利用者追加申請を送信しました');
+                  resetForm();
+                }}
+                onCancel={resetForm}
+              />
+            )}
+            {selectedRequest === 'user-remove' && (
+              <UserRemoveForm
+                onSubmit={(data) => {
+                  console.log('User remove submitted:', data);
+                  alert('利用者削除申請を送信しました');
+                  resetForm();
+                }}
+                onCancel={resetForm}
+              />
+            )}
+            {selectedRequest === 'pc-add' && (
+              <PcAddForm
+                onSubmit={(data) => {
+                  console.log('PC add submitted:', data);
+                  alert('PC追加申請を送信しました');
+                  resetForm();
+                }}
+                onCancel={resetForm}
+              />
+            )}
+            {selectedRequest === 'pc-change' && (
+              <PcChangeForm
+                onSubmit={(data) => {
+                  console.log('PC change submitted:', data);
+                  alert('PC変更申請を送信しました');
+                  resetForm();
+                }}
+                onCancel={resetForm}
+              />
+            )}
+            {selectedRequest === 'payment-change' && (
+              <PaymentChangeForm
+                onSubmit={(data) => {
+                  console.log('Payment change submitted:', data);
+                  alert('支払い方法変更申請を送信しました');
+                  resetForm();
+                }}
+                onCancel={resetForm}
+              />
+            )}
+            {selectedRequest === 'wage-account' && (
+              <WageAccountForm
+                onSubmit={(data) => {
+                  console.log('Wage account submitted:', data);
+                  alert('工賃振込先口座申請を送信しました');
+                  resetForm();
+                }}
+                onCancel={resetForm}
+              />
+            )}
+            {selectedRequest === 'other' && (
+              <OtherInquiryForm
+                onSubmit={(data) => {
+                  console.log('Other inquiry submitted:', data);
+                  alert('お問い合わせを送信しました');
+                  resetForm();
+                }}
+                onCancel={resetForm}
+              />
+            )}
           </CardContent>
         </Card>
       )}

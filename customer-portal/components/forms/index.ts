@@ -1,0 +1,9 @@
+export { PlanChangeForm } from "./PlanChangeForm";
+export { GameChangeForm } from "./GameChangeForm";
+export { UserAddForm } from "./UserAddForm";
+export { UserRemoveForm } from "./UserRemoveForm";
+export { PcAddForm } from "./PcAddForm";
+export { PcChangeForm } from "./PcChangeForm";
+export { PaymentChangeForm } from "./PaymentChangeForm";
+export { WageAccountForm } from "./WageAccountForm";
+export { OtherInquiryForm } from "./OtherInquiryForm";
