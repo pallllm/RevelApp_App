@@ -29,7 +29,7 @@ export function PlanChangeForm({
   const [targetPlan, setTargetPlan] = useState<Plan | null>(null);
   const [selectedGames, setSelectedGames] = useState<string[]>([]);
   const [backupGame, setBackupGame] = useState<string>("");
-  const [userCount, setUserCount] = useState<number>(3);
+  const [userCount, setUserCount] = useState<number>(0);
   const [users, setUsers] = useState<any[]>([]);
 
   const availablePlans = Object.entries(PLANS)
@@ -101,11 +101,11 @@ export function PlanChangeForm({
 
   // Auto-initialize users when showUserInfo becomes true
   useEffect(() => {
-    if (showUserInfo && users.length === 0) {
+    if (showUserInfo && users.length === 0 && userCount > 0) {
       console.log("🔄 Auto-initializing users with count:", userCount);
       handleUserCountChange(userCount);
     }
-  }, [showUserInfo]);
+  }, [showUserInfo, userCount]);
 
   // Debug logging
   console.log("🔍 Debug Info:", {
@@ -269,6 +269,7 @@ export function PlanChangeForm({
             onChange={(e) => handleUserCountChange(Number(e.target.value))}
             required
           >
+            <option value={0}>選択してください</option>
             <option value={3}>3名</option>
             <option value={4}>4名</option>
             <option value={5}>5名</option>
