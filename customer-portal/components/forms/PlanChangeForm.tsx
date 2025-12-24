@@ -67,6 +67,14 @@ export function PlanChangeForm({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Double-check validation before submitting
+    if (!isFormValid()) {
+      console.log("⛔ Form submission blocked: Form is not valid");
+      return;
+    }
+
+    console.log("✅ Form is valid, proceeding with submission");
     onSubmit({
       currentPlan,
       targetPlan,
