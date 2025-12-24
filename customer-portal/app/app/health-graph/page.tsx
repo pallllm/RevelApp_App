@@ -1,7 +1,16 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   LineChart,
   Line,
@@ -23,7 +32,9 @@ import {
   Gamepad2,
   TrendingUp,
   TrendingDown,
+  Moon,
 } from "lucide-react";
+import { GAMES } from "@/lib/constants";
 
 // Sample data - 1ヶ月分のデータ
 const dailyHealthData = Array.from({ length: 31 }, (_, i) => {
@@ -40,12 +51,12 @@ const dailyHealthData = Array.from({ length: 31 }, (_, i) => {
 
 // プレイしたゲーム（メダル表示用）
 const playedGames = [
-  { id: "gesoten", name: "ゲソテンバース", playCount: 50, isRecent: true },
-  { id: "mcheroes", name: "マイクリプトヒーローズ", playCount: 73, isRecent: true },
-  { id: "elf1", name: "エルフの森 Lv1", playCount: 23, isRecent: true },
-  { id: "axie-tri", name: "Axie トライフォース", playCount: 16, isRecent: false },
-  { id: "xeno", name: "XENO", playCount: 12, isRecent: true },
-  { id: "elf2", name: "エルフの森 Lv2", playCount: 8, isRecent: false },
+  { id: "gesoten", playCount: 50, isRecent: true },
+  { id: "mcheroes", playCount: 73, isRecent: true },
+  { id: "elf1", playCount: 23, isRecent: true },
+  { id: "axie-tri", playCount: 16, isRecent: false },
+  { id: "xeno", playCount: 12, isRecent: true },
+  { id: "elf2", playCount: 8, isRecent: false },
 ];
 
 // 記録がある日（カレンダー用）
@@ -75,18 +86,31 @@ const records = [
 
 // 天気アイコンを取得
 const getWeatherIcon = (weather: string) => {
-  const icons = {
-    sunny: "☀️",
-    cloudy: "☁️",
-    rainy: "🌧️",
-    snow: "❄️",
-  };
-  return icons[weather as keyof typeof icons] || "☀️";
+  switch (weather) {
+    case "sunny":
+      return <Sun className="h-5 w-5 text-yellow-500" />;
+    case "cloudy":
+      return <Cloud className="h-5 w-5 text-gray-400" />;
+    case "rainy":
+      return <CloudRain className="h-5 w-5 text-blue-500" />;
+    case "snow":
+      return <CloudSnow className="h-5 w-5 text-blue-300" />;
+    default:
+      return <Sun className="h-5 w-5 text-yellow-500" />;
+  }
 };
+
+// 利用者リスト
+const users = [
+  { id: "1", name: "HATARAKU T.O." },
+  { id: "2", name: "山田 太郎" },
+  { id: "3", name: "佐藤 花子" },
+];
 
 export default function HealthGraphPage() {
   const [selectedYear, setSelectedYear] = useState<number>(2024);
   const [selectedMonth, setSelectedMonth] = useState<number>(12);
+  const [selectedUserId, setSelectedUserId] = useState<string>("1");
 
   // カレンダー生成
   const generateCalendarDays = () => {
@@ -112,149 +136,220 @@ export default function HealthGraphPage() {
   const isCurrentMonth =
     today.getFullYear() === selectedYear && today.getMonth() + 1 === selectedMonth;
 
-  // カレンダーナビゲーション
-  const handlePreviousMonth = () => {
-    if (selectedMonth === 1) {
-      setSelectedMonth(12);
-      setSelectedYear(selectedYear - 1);
-    } else {
-      setSelectedMonth(selectedMonth - 1);
-    }
-  };
-
-  const handleNextMonth = () => {
-    if (selectedMonth === 12) {
-      setSelectedMonth(1);
-      setSelectedYear(selectedYear + 1);
-    } else {
-      setSelectedMonth(selectedMonth + 1);
-    }
-  };
+  const selectedUser = users.find((u) => u.id === selectedUserId);
 
   return (
-    <div className="max-w-[594mm] mx-auto bg-white p-8 space-y-5">
+    <div className="max-w-[594mm] mx-auto bg-gradient-to-br from-slate-50 to-blue-50 p-8 space-y-6">
       {/* ヘッダー */}
-      <div className="border-b-2 border-gray-900 pb-3">
-        <h1 className="text-2xl font-bold text-gray-900">体調・行動ダッシュボード</h1>
-        <div className="flex justify-between items-center mt-2">
-          <p className="text-sm text-gray-600">HATARAKU T.O. 様</p>
-          <p className="text-sm text-gray-600">
-            {selectedYear}年{selectedMonth}月度
-          </p>
+      <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl shadow-lg p-6 text-white">
+        <h1 className="text-3xl font-bold">体調・行動ダッシュボード</h1>
+        <div className="flex gap-4 items-center mt-4">
+          <div>
+            <p className="text-sm text-blue-100 mb-1">利用者</p>
+            <Select value={selectedUserId} onValueChange={setSelectedUserId}>
+              <SelectTrigger className="w-64 bg-white text-gray-900 border-0">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {users.map((user) => (
+                  <SelectItem key={user.id} value={user.id}>
+                    {user.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <p className="text-sm text-blue-100 mb-1">対象年月</p>
+            <div className="flex gap-2">
+              <Select
+                value={selectedYear.toString()}
+                onValueChange={(v) => setSelectedYear(parseInt(v))}
+              >
+                <SelectTrigger className="w-28 bg-white text-gray-900 border-0">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {[2023, 2024, 2025].map((year) => (
+                    <SelectItem key={year} value={year.toString()}>
+                      {year}年
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select
+                value={selectedMonth.toString()}
+                onValueChange={(v) => setSelectedMonth(parseInt(v))}
+              >
+                <SelectTrigger className="w-24 bg-white text-gray-900 border-0">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Array.from({ length: 12 }, (_, i) => i + 1).map((month) => (
+                    <SelectItem key={month} value={month.toString()}>
+                      {month}月
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* 第1行: サマリー指標とゲームメダル */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-6">
         {/* 左側: サマリー指標 */}
-        <div className="grid grid-cols-3 gap-3">
-          <div className="border-2 border-gray-300 p-3">
-            <div className="flex items-center gap-2 mb-1">
-              <Gamepad2 className="h-4 w-4" />
-              <p className="text-xs font-semibold text-gray-700">累計プレイ回数</p>
-            </div>
-            <p className="text-2xl font-bold">230回</p>
-            <div className="flex items-center gap-1 mt-1">
-              <TrendingUp className="h-3 w-3 text-gray-600" />
-              <p className="text-xs text-gray-600">+14回</p>
-            </div>
-          </div>
+        <div className="grid grid-cols-3 gap-4">
+          <Card className="shadow-lg border-0 bg-gradient-to-br from-yellow-50 to-orange-50">
+            <CardContent className="pt-6 pb-4">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center shadow-md">
+                  <Gamepad2 className="h-5 w-5 text-white" />
+                </div>
+              </div>
+              <p className="text-xs text-gray-600 mb-1">累計プレイ回数</p>
+              <p className="text-3xl font-bold text-gray-900">230回</p>
+              <div className="flex items-center gap-1 mt-1">
+                <TrendingUp className="h-4 w-4 text-green-600" />
+                <p className="text-xs text-green-600 font-semibold">+14回</p>
+              </div>
+            </CardContent>
+          </Card>
 
-          <div className="border-2 border-gray-300 p-3">
-            <div className="flex items-center gap-2 mb-1">
-              <Cloud className="h-4 w-4" />
-              <p className="text-xs font-semibold text-gray-700">平均睡眠時間</p>
-            </div>
-            <p className="text-2xl font-bold">6.2時間</p>
-            <div className="flex items-center gap-1 mt-1">
-              <TrendingDown className="h-3 w-3 text-gray-600" />
-              <p className="text-xs text-gray-600">-0.5時間</p>
-            </div>
-          </div>
+          <Card className="shadow-lg border-0 bg-gradient-to-br from-blue-50 to-cyan-50">
+            <CardContent className="pt-6 pb-4">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-blue-400 to-cyan-500 flex items-center justify-center shadow-md">
+                  <Moon className="h-5 w-5 text-white" />
+                </div>
+              </div>
+              <p className="text-xs text-gray-600 mb-1">平均睡眠時間</p>
+              <p className="text-3xl font-bold text-gray-900">6.2時間</p>
+              <div className="flex items-center gap-1 mt-1">
+                <TrendingDown className="h-4 w-4 text-orange-600" />
+                <p className="text-xs text-orange-600 font-semibold">-0.5時間</p>
+              </div>
+            </CardContent>
+          </Card>
 
-          <div className="border-2 border-gray-300 p-3">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-lg">🏆</span>
-              <p className="text-xs font-semibold text-gray-700">現在のランク</p>
-            </div>
-            <p className="text-2xl font-bold">ゴールド</p>
-            <p className="text-xs text-gray-600 mt-1">230回達成</p>
-          </div>
+          <Card className="shadow-lg border-0 bg-gradient-to-br from-purple-50 to-pink-50">
+            <CardContent className="pt-6 pb-4">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center shadow-md">
+                  <span className="text-2xl">🏆</span>
+                </div>
+              </div>
+              <p className="text-xs text-gray-600 mb-1">現在のランク</p>
+              <p className="text-2xl font-bold text-gray-900">ゴールド</p>
+              <p className="text-xs text-gray-600 mt-1">230回達成</p>
+            </CardContent>
+          </Card>
         </div>
 
         {/* 右側: プレイしたゲーム */}
-        <div className="border-2 border-gray-300">
-          <div className="bg-gray-100 border-b-2 border-gray-300 px-3 py-1.5">
-            <h2 className="font-bold text-xs">プレイしたゲーム</h2>
-          </div>
-          <div className="p-3">
-            <div className="flex gap-4 justify-center">
-              {playedGames.map((game) => (
-                <div key={game.id} className="text-center">
-                  <div
-                    className={`w-12 h-12 rounded-full border-2 flex items-center justify-center text-base font-bold mb-1 ${
-                      game.isRecent
-                        ? "border-gray-900 bg-gray-900 text-white"
-                        : "border-gray-400 bg-white text-gray-400"
-                    }`}
-                  >
-                    {game.playCount}
+        <Card className="shadow-lg border-0">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">プレイしたゲーム</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-6 justify-center flex-wrap">
+              {playedGames.map((game) => {
+                const gameInfo = GAMES.find((g) => g.id === game.id);
+                if (!gameInfo) return null;
+                return (
+                  <div key={game.id} className="text-center relative">
+                    <div className="relative">
+                      <div className="w-16 h-16 rounded-full overflow-hidden border-4 border-white shadow-lg">
+                        <Image
+                          src={gameInfo.image}
+                          alt={gameInfo.name}
+                          width={64}
+                          height={64}
+                          className="object-cover"
+                        />
+                      </div>
+                      <Badge
+                        className={`absolute -top-1 -right-1 ${
+                          game.isRecent
+                            ? "bg-gradient-to-r from-blue-500 to-purple-500"
+                            : "bg-gray-400"
+                        } text-white font-bold shadow-md`}
+                      >
+                        {game.playCount}
+                      </Badge>
+                    </div>
+                    <p className="text-xs font-medium mt-2 w-20">{gameInfo.name}</p>
                   </div>
-                  <p className="text-xs font-medium w-16 truncate">{game.name}</p>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* 第2行: 統合グラフと気圧変化グラフ、カレンダー */}
+      <div className="grid grid-cols-3 gap-6">
+        {/* 疲労度・睡眠時間・気温グラフ */}
+        <Card className="col-span-2 shadow-lg border-0">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">疲労度・睡眠時間・気温</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {/* 天気アイコン */}
+            <div className="flex gap-1 mb-2 justify-center">
+              {dailyHealthData.slice(0, 15).map((data) => (
+                <div key={data.day} className="flex flex-col items-center">
+                  {getWeatherIcon(data.weather)}
+                  <span className="text-xs text-gray-500">{data.day}</span>
                 </div>
               ))}
             </div>
-          </div>
-        </div>
-      </div>
-
-      {/* 第2行: グラフ、カレンダー、天気 */}
-      <div className="grid grid-cols-3 gap-4">
-        {/* 疲労度・睡眠時間グラフ */}
-        <div className="border-2 border-gray-300 col-span-2">
-          <div className="bg-gray-100 border-b-2 border-gray-300 px-3 py-1.5">
-            <h2 className="font-bold text-xs">疲労度・睡眠時間</h2>
-          </div>
-          <div className="p-3">
-            <ResponsiveContainer width="100%" height={180}>
+            <ResponsiveContainer width="100%" height={200}>
               <ComposedChart data={dailyHealthData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#d1d5db" />
-                <XAxis dataKey="day" fontSize={9} />
-                <YAxis yAxisId="left" domain={[0, 100]} fontSize={9} />
-                <YAxis yAxisId="right" orientation="right" domain={[0, 10]} fontSize={9} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis dataKey="day" fontSize={10} />
+                <YAxis yAxisId="left" domain={[0, 100]} fontSize={10} label={{ value: '疲労(%)/睡眠(h)', angle: -90, position: 'insideLeft', fontSize: 10 }} />
+                <YAxis yAxisId="right" orientation="right" domain={[0, 30]} fontSize={10} label={{ value: '気温(℃)', angle: 90, position: 'insideRight', fontSize: 10 }} />
                 <Tooltip />
-                <Legend iconSize={9} wrapperStyle={{ fontSize: "9px" }} />
+                <Legend iconSize={10} wrapperStyle={{ fontSize: "10px" }} />
+                <Bar yAxisId="left" dataKey="fatigue" fill="#f97316" name="疲労度(%)" />
+                <Bar yAxisId="left" dataKey="sleepHours" fill="#3b82f6" name="睡眠(h)" />
                 <Line
-                  yAxisId="left"
+                  yAxisId="right"
                   type="monotone"
-                  dataKey="fatigue"
-                  stroke="#000"
+                  dataKey="temperature"
+                  stroke="#ef4444"
                   strokeWidth={2}
-                  name="疲労度(%)"
-                  dot={false}
+                  name="気温(℃)"
+                  dot={{ fill: "#ef4444", r: 3 }}
                 />
-                <Bar yAxisId="right" dataKey="sleepHours" fill="#666" name="睡眠(h)" />
               </ComposedChart>
             </ResponsiveContainer>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
 
         {/* カレンダー */}
-        <div className="border-2 border-gray-300">
-          <div className="bg-gray-100 border-b-2 border-gray-300 px-3 py-1.5">
-            <h2 className="font-bold text-xs">
+        <Card className="shadow-lg border-0">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">
               {selectedYear}年{selectedMonth}月
-            </h2>
-          </div>
-          <div className="p-3">
-            <div className="grid grid-cols-7 gap-0.5 mb-1.5">
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-7 gap-1 mb-2">
               {["日", "月", "火", "水", "木", "金", "土"].map((day, i) => (
-                <div key={i} className="text-center text-xs font-bold">
+                <div
+                  key={i}
+                  className={`text-center text-xs font-bold ${
+                    i === 0 ? "text-red-500" : i === 6 ? "text-blue-500" : "text-gray-700"
+                  }`}
+                >
                   {day}
                 </div>
               ))}
             </div>
-            <div className="grid grid-cols-7 gap-0.5">
+            <div className="grid grid-cols-7 gap-1">
               {calendarDays.map((day, index) => {
                 const hasRecord = day && recordedDays.includes(day);
                 const isTodayDate = isCurrentMonth && day === today.getDate();
@@ -263,12 +358,12 @@ export default function HealthGraphPage() {
                   <div key={index} className="aspect-square flex items-center justify-center">
                     {day && (
                       <div
-                        className={`w-full h-full flex items-center justify-center text-xs font-medium border ${
+                        className={`w-full h-full flex items-center justify-center text-xs font-medium rounded-lg transition-all ${
                           isTodayDate
-                            ? "bg-gray-900 text-white border-gray-900"
+                            ? "bg-gradient-to-br from-blue-500 to-cyan-500 text-white shadow-lg ring-2 ring-blue-300"
                             : hasRecord
-                            ? "bg-gray-300 border-gray-400"
-                            : "border-gray-200"
+                            ? "bg-gradient-to-br from-purple-400 to-pink-400 text-white shadow-md"
+                            : "text-gray-700 hover:bg-gray-100"
                         }`}
                       >
                         {day}
@@ -278,74 +373,82 @@ export default function HealthGraphPage() {
                 );
               })}
             </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* 第3行: 天気データとAIコメント */}
-      <div className="grid grid-cols-2 gap-4">
-        {/* 天気データ */}
-        <div className="border-2 border-gray-300">
-          <div className="bg-gray-100 border-b-2 border-gray-300 px-3 py-1.5">
-            <h2 className="font-bold text-xs">天気・気温（直近7日間）</h2>
-          </div>
-          <div className="p-3">
-            <div className="flex gap-2">
-              {dailyHealthData.slice(0, 7).map((data) => (
-                <div key={data.day} className="text-center border border-gray-300 p-2 flex-1">
-                  <p className="text-xs font-bold mb-1">{data.day}日</p>
-                  <p className="text-base mb-1">{getWeatherIcon(data.weather)}</p>
-                  <p className="text-xs font-medium">{data.temperature}℃</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+      {/* 第3行: 気圧変化グラフとAIコメント */}
+      <div className="grid grid-cols-2 gap-6">
+        {/* 気圧変化グラフ */}
+        <Card className="shadow-lg border-0">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">気圧変化</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={180}>
+              <LineChart data={dailyHealthData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis dataKey="day" fontSize={10} />
+                <YAxis domain={[990, 1030]} fontSize={10} />
+                <Tooltip />
+                <Legend iconSize={10} wrapperStyle={{ fontSize: "10px" }} />
+                <Line
+                  type="monotone"
+                  dataKey="pressure"
+                  stroke="#8b5cf6"
+                  strokeWidth={2}
+                  name="気圧(hPa)"
+                  dot={{ fill: "#8b5cf6", r: 3 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
 
         {/* AIコメント */}
-        <div className="border-2 border-gray-900 bg-gray-50">
-          <div className="p-3">
-            <div className="flex items-start gap-3">
-              <div className="text-2xl">🐻</div>
+        <Card className="shadow-lg border-0 bg-gradient-to-br from-amber-50 to-orange-50">
+          <CardContent className="pt-6">
+            <div className="flex items-start gap-4">
+              <div className="text-5xl">🐻</div>
               <div>
-                <p className="text-xs font-bold mb-1">サポートメッセージ</p>
-                <p className="text-xs leading-relaxed">
+                <p className="text-sm font-bold text-amber-900 mb-2">サポートメッセージ</p>
+                <p className="text-sm leading-relaxed text-gray-700">
                   先月に比べて疲労感が安定してきたね。睡眠時間は少し減っているけど、ゲームへの集中が続いているのは素晴らしい！
                 </p>
               </div>
             </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* 記録一覧 */}
-      <div className="border-2 border-gray-300">
-        <div className="bg-gray-100 border-b-2 border-gray-300 px-3 py-1.5">
-          <h2 className="font-bold text-xs">日々の記録</h2>
-        </div>
-        <div className="p-3">
-          <table className="w-full text-xs">
+      <Card className="shadow-lg border-0">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">日々の記録</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <table className="w-full text-sm">
             <thead>
-              <tr className="border-b-2 border-gray-400">
-                <th className="text-left py-1.5 font-bold">日付</th>
-                <th className="text-left py-1.5 font-bold">できたこと</th>
-                <th className="text-left py-1.5 font-bold">難しかったこと</th>
-                <th className="text-left py-1.5 font-bold">コメント</th>
+              <tr className="border-b-2 border-gray-300">
+                <th className="text-left py-2 font-bold text-gray-700">日付</th>
+                <th className="text-left py-2 font-bold text-gray-700">できたこと</th>
+                <th className="text-left py-2 font-bold text-gray-700">難しかったこと</th>
+                <th className="text-left py-2 font-bold text-gray-700">コメント</th>
               </tr>
             </thead>
             <tbody>
               {records.map((record, index) => (
-                <tr key={index} className="border-b border-gray-300">
-                  <td className="py-1.5 font-medium">{record.date}</td>
-                  <td className="py-1.5">{record.achievements}</td>
-                  <td className="py-1.5">{record.challenges}</td>
-                  <td className="py-1.5">{record.notes}</td>
+                <tr key={index} className="border-b border-gray-200 hover:bg-gray-50">
+                  <td className="py-3 font-medium text-gray-900">{record.date}</td>
+                  <td className="py-3 text-gray-700">{record.achievements}</td>
+                  <td className="py-3 text-gray-700">{record.challenges}</td>
+                  <td className="py-3 text-gray-700">{record.notes}</td>
                 </tr>
               ))}
             </tbody>
           </table>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
