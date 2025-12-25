@@ -159,6 +159,37 @@ export default function RequestsPage() {
     setSelectedRequest(null);
   };
 
+  // 申請を送信する共通関数
+  const submitRequest = async (requestType: string, requestData: any, notes?: string) => {
+    try {
+      const response = await fetch('/api/change-requests', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          requestType,
+          requestData,
+          notes: notes || `${REQUEST_TYPE_LABELS[requestType] || requestType}の申請`,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('申請の送信に失敗しました');
+      }
+
+      // 成功したら申請履歴を再取得
+      const data = await fetch('/api/change-requests').then(r => r.json());
+      setRequests(data.changeRequests);
+
+      alert('申請を送信しました。承認をお待ちください。');
+      resetForm();
+    } catch (error) {
+      console.error('Failed to submit request:', error);
+      alert('申請の送信に失敗しました。もう一度お試しください。');
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Page Header */}
@@ -296,93 +327,57 @@ export default function RequestsPage() {
             {selectedRequest === 'plan-change' && (
               <PlanChangeForm
                 currentPlan={currentPlan}
-                onSubmit={(data) => {
-                  console.log('Plan change submitted:', data);
-                  alert('プラン変更申請を送信しました');
-                  resetForm();
-                }}
+                onSubmit={(data) => submitRequest('plan_change', data)}
                 onCancel={resetForm}
               />
             )}
             {selectedRequest === 'game-change' && (
               <GameChangeForm
                 currentPlan={currentPlan}
-                onSubmit={(data) => {
-                  console.log('Game change submitted:', data);
-                  alert('ゲーム変更申請を送信しました');
-                  resetForm();
-                }}
+                onSubmit={(data) => submitRequest('game_change', data)}
                 onCancel={resetForm}
               />
             )}
             {selectedRequest === 'user-add' && (
               <UserAddForm
                 currentPlan={currentPlan}
-                onSubmit={(data) => {
-                  console.log('User add submitted:', data);
-                  alert('利用者追加申請を送信しました');
-                  resetForm();
-                }}
+                onSubmit={(data) => submitRequest('user_add', data)}
                 onCancel={resetForm}
               />
             )}
             {selectedRequest === 'user-remove' && (
               <UserRemoveForm
-                onSubmit={(data) => {
-                  console.log('User remove submitted:', data);
-                  alert('利用者削除申請を送信しました');
-                  resetForm();
-                }}
+                onSubmit={(data) => submitRequest('user_remove', data)}
                 onCancel={resetForm}
               />
             )}
             {selectedRequest === 'pc-add' && (
               <PcAddForm
-                onSubmit={(data) => {
-                  console.log('PC add submitted:', data);
-                  alert('PC追加申請を送信しました');
-                  resetForm();
-                }}
+                onSubmit={(data) => submitRequest('pc_add', data)}
                 onCancel={resetForm}
               />
             )}
             {selectedRequest === 'pc-change' && (
               <PcChangeForm
-                onSubmit={(data) => {
-                  console.log('PC change submitted:', data);
-                  alert('PC変更申請を送信しました');
-                  resetForm();
-                }}
+                onSubmit={(data) => submitRequest('pc_change', data)}
                 onCancel={resetForm}
               />
             )}
             {selectedRequest === 'payment-change' && (
               <PaymentChangeForm
-                onSubmit={(data) => {
-                  console.log('Payment change submitted:', data);
-                  alert('支払い方法変更申請を送信しました');
-                  resetForm();
-                }}
+                onSubmit={(data) => submitRequest('payment_change', data)}
                 onCancel={resetForm}
               />
             )}
             {selectedRequest === 'wage-account' && (
               <WageAccountForm
-                onSubmit={(data) => {
-                  console.log('Wage account submitted:', data);
-                  alert('工賃振込先口座申請を送信しました');
-                  resetForm();
-                }}
+                onSubmit={(data) => submitRequest('wage_account', data)}
                 onCancel={resetForm}
               />
             )}
             {selectedRequest === 'other' && (
               <OtherInquiryForm
-                onSubmit={(data) => {
-                  console.log('Other inquiry submitted:', data);
-                  alert('お問い合わせを送信しました');
-                  resetForm();
-                }}
+                onSubmit={(data) => submitRequest('other', data)}
                 onCancel={resetForm}
               />
             )}
