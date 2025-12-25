@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,8 +15,12 @@ import {
   CheckCircle,
   ExternalLink,
   Loader2,
+  BookOpen,
+  Video,
 } from "lucide-react";
-import { getFacility } from "@/lib/api/client";
+import { getFacility, formatPlanType } from "@/lib/api/client";
+
+type PlanType = "FOCUS" | "ENTRY" | "FLEXIBLE";
 
 interface Game {
   id: string;
@@ -23,43 +28,69 @@ interface Game {
   level: number;
   imageUrl: string | null;
   manualUrl: string | null;
+  videoUrl: string | null;
   description: string | null;
   isBackup: boolean;
+}
+
+interface Member {
+  id: string;
+  name: string;
+  initials: string;
 }
 
 export default function ContractPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [games, setGames] = useState<Game[]>([]);
+  const [planType, setPlanType] = useState<PlanType>("FLEXIBLE");
+  const [members, setMembers] = useState<Member[]>([]);
 
   useEffect(() => {
-    async function fetchGames() {
+    async function fetchData() {
       try {
         setLoading(true);
         setError(null);
         const data = await getFacility();
 
-        // facilityGamesからゲーム情報を取得
+        // プランタイプを設定
+        setPlanType(data.facility.planType);
+
+        // ゲーム情報を設定
         const facilityGames = data.facility.games.map((fg: any) => ({
           id: fg.id,
           name: fg.name,
           level: fg.level,
           imageUrl: fg.imageUrl,
           manualUrl: fg.manualUrl,
+          videoUrl: fg.videoUrl,
           description: fg.description,
           isBackup: fg.isBackup,
         }));
-
         setGames(facilityGames);
+
+        // メンバー情報を設定（フォーカスプラン用）
+        const memberUsers = data.facility.members
+          .filter((m: any) => m.role === 'MEMBER')
+          .map((m: any) => ({
+            id: m.id,
+            name: m.name,
+            initials: m.initials,
+          }));
+        setMembers(memberUsers);
       } catch (err) {
-        console.error('Failed to fetch games:', err);
-        setError(err instanceof Error ? err.message : 'ゲーム情報の取得に失敗しました');
+        console.error('Failed to fetch data:', err);
+        setError(err instanceof Error ? err.message : 'データの取得に失敗しました');
       } finally {
         setLoading(false);
       }
     }
-    fetchGames();
+    fetchData();
   }, []);
+
+  // メインゲームと予備ゲームを分離
+  const mainGames = games.filter(g => !g.isBackup);
+  const backupGames = games.filter(g => g.isBackup);
   return (
     <div className="space-y-6">
       {/* Page Header */}
@@ -189,92 +220,212 @@ export default function ContractPage() {
         </Card>
       </div>
 
-      {/* Games */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <Gamepad2 className="h-5 w-5 text-blue-600" />
-              導入ゲーム
-            </CardTitle>
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-2"
-              onClick={() => window.location.href = '/app/requests'}
-            >
-              <Edit className="h-3 w-3" />
-              変更申請
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      {/* Games - Entry/Flexible Plans */}
+      {(planType === "ENTRY" || planType === "FLEXIBLE") && (
+        <Card className="shadow-sm border border-gray-200 bg-blue-50/30">
+          <CardHeader className="border-b bg-blue-50/50">
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2 text-gray-900 text-base">
+                <Gamepad2 className="h-5 w-5 text-blue-500" />
+                導入ゲーム
+              </CardTitle>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                onClick={() => window.location.href = '/app/requests'}
+              >
+                <Edit className="h-3 w-3" />
+                変更申請
+              </Button>
             </div>
-          ) : error ? (
-            <div className="text-center py-8 text-red-600">
-              {error}
-            </div>
-          ) : games.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              登録されているゲームがありません
-            </div>
-          ) : (
-            <div className="grid gap-4 md:grid-cols-3">
-              {games.map((game) => (
-                <div
-                  key={game.id}
-                  className="border rounded-lg p-4 hover:bg-accent/50 transition-colors"
-                >
-                  <div className="flex items-start justify-between mb-2">
-                    {game.imageUrl ? (
-                      <img
-                        src={game.imageUrl}
-                        alt={game.name}
-                        className="h-10 w-10 rounded-lg object-cover"
-                      />
-                    ) : (
-                      <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center">
-                        <Gamepad2 className="h-5 w-5 text-white" />
-                      </div>
-                    )}
-                    <div className="flex flex-col items-end gap-1">
-                      <Badge variant="success">有効</Badge>
-                      {game.isBackup && (
-                        <Badge variant="outline" className="text-xs">
-                          バックアップ
-                        </Badge>
-                      )}
+          </CardHeader>
+          <CardContent className="pt-6 space-y-6">
+            {loading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : error ? (
+              <div className="text-center py-8 text-red-600">{error}</div>
+            ) : (
+              <>
+                {/* Main Games */}
+                {mainGames.length > 0 && (
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-700 mb-4">
+                      メインゲーム（{mainGames.length}個）
+                    </h3>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+                      {mainGames.map((game) => (
+                        <div
+                          key={game.id}
+                          className="p-3 border-2 border-blue-200 bg-white rounded-lg"
+                        >
+                          <div className="space-y-2">
+                            <div className="relative w-full aspect-[4/3] rounded-md overflow-hidden bg-gray-100">
+                              {game.imageUrl ? (
+                                <Image
+                                  src={game.imageUrl}
+                                  alt={game.name}
+                                  fill
+                                  className="object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center">
+                                  <Gamepad2 className="h-8 w-8 text-gray-400" />
+                                </div>
+                              )}
+                            </div>
+                            <div className="font-semibold text-xs leading-tight">
+                              {game.name}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              Lv.{game.level}
+                            </div>
+                            <div className="flex flex-col gap-1.5 pt-1">
+                              {game.manualUrl && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="w-full h-7 gap-1 border-blue-200 hover:bg-blue-50 text-xs px-2"
+                                  onClick={() => window.open(game.manualUrl!, "_blank")}
+                                >
+                                  <BookOpen className="h-3 w-3" />
+                                  マニュアル
+                                </Button>
+                              )}
+                              {game.videoUrl && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="w-full h-7 gap-1 border-purple-200 hover:bg-purple-50 text-xs px-2"
+                                  onClick={() => window.open(game.videoUrl!, "_blank")}
+                                >
+                                  <Video className="h-3 w-3" />
+                                  動画
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <p className="font-semibold">{game.name}</p>
-                    <Badge variant="outline" className="text-xs">
-                      Lv.{game.level}
-                    </Badge>
+                )}
+
+                {/* Backup Games */}
+                {backupGames.length > 0 && (
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-700 mb-3">
+                      予備ゲーム（{backupGames.length}個）
+                    </h3>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+                      {backupGames.map((game) => (
+                        <div
+                          key={game.id}
+                          className="p-3 border-2 border-orange-200 bg-orange-50/50 rounded-lg"
+                        >
+                          <div className="space-y-2">
+                            <div className="relative w-full aspect-[4/3] rounded-md overflow-hidden bg-gray-100">
+                              {game.imageUrl ? (
+                                <Image
+                                  src={game.imageUrl}
+                                  alt={game.name}
+                                  fill
+                                  className="object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center">
+                                  <Gamepad2 className="h-8 w-8 text-gray-400" />
+                                </div>
+                              )}
+                            </div>
+                            <div className="font-semibold text-xs leading-tight">
+                              {game.name}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              Lv.{game.level}
+                            </div>
+                            <div className="flex flex-col gap-1.5 pt-1">
+                              {game.manualUrl && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="w-full h-7 gap-1 border-blue-200 hover:bg-blue-50 text-xs px-2"
+                                  onClick={() => window.open(game.manualUrl!, "_blank")}
+                                >
+                                  <BookOpen className="h-3 w-3" />
+                                  マニュアル
+                                </Button>
+                              )}
+                              {game.videoUrl && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="w-full h-7 gap-1 border-purple-200 hover:bg-purple-50 text-xs px-2"
+                                  onClick={() => window.open(game.videoUrl!, "_blank")}
+                                >
+                                  <Video className="h-3 w-3" />
+                                  動画
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  <p className="text-sm text-muted-foreground mb-2">
-                    {game.description || 'レベル' + game.level + 'のゲーム'}
-                  </p>
-                  {game.manualUrl && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="gap-2 text-xs h-7 px-2"
-                      onClick={() => window.open(game.manualUrl!, '_blank')}
-                    >
-                      マニュアル
-                      <ExternalLink className="h-3 w-3" />
-                    </Button>
-                  )}
-                </div>
-              ))}
+                )}
+              </>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Games - Focus Plan (User-specific assignments) */}
+      {planType === "FOCUS" && (
+        <Card className="shadow-sm border border-gray-200">
+          <CardHeader className="border-b">
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2 text-gray-900 text-base">
+                <Gamepad2 className="h-5 w-5 text-purple-500" />
+                導入ゲーム（利用者別）
+              </CardTitle>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                onClick={() => window.location.href = '/app/requests'}
+              >
+                <Edit className="h-3 w-3" />
+                変更申請
+              </Button>
             </div>
-          )}
-        </CardContent>
-      </Card>
+          </CardHeader>
+          <CardContent className="pt-6">
+            {loading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : error ? (
+              <div className="text-center py-8 text-red-600">{error}</div>
+            ) : members.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                登録されている利用者がありません
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  フォーカスプランでは、各利用者に2つのゲームと1つの予備ゲームを割り当てることができます。
+                </p>
+                <div className="text-center py-8 text-muted-foreground">
+                  利用者ごとのゲーム割り当て機能は実装予定です
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Reward Payment Info */}
       <Card>
