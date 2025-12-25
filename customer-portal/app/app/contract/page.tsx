@@ -45,6 +45,8 @@ export default function ContractPage() {
   const [games, setGames] = useState<Game[]>([]);
   const [planType, setPlanType] = useState<PlanType>("FLEXIBLE");
   const [members, setMembers] = useState<Member[]>([]);
+  const [facilityName, setFacilityName] = useState<string>("");
+  const [memberCount, setMemberCount] = useState<number>(0);
 
   useEffect(() => {
     async function fetchData() {
@@ -53,8 +55,18 @@ export default function ContractPage() {
         setError(null);
         const data = await getFacility();
 
-        // プランタイプを設定
+        // 事業所情報を設定
+        setFacilityName(data.facility.name);
         setPlanType(data.facility.planType);
+
+        // メンバー情報を設定
+        const memberUsers = data.facility.members.filter((m: any) => m.role === 'MEMBER');
+        setMembers(memberUsers.map((m: any) => ({
+          id: m.id,
+          name: m.name,
+          initials: m.initials,
+        })));
+        setMemberCount(memberUsers.length);
 
         // ゲーム情報を設定
         const facilityGames = data.facility.games.map((fg: any) => ({
@@ -68,16 +80,6 @@ export default function ContractPage() {
           isBackup: fg.isBackup,
         }));
         setGames(facilityGames);
-
-        // メンバー情報を設定（フォーカスプラン用）
-        const memberUsers = data.facility.members
-          .filter((m: any) => m.role === 'MEMBER')
-          .map((m: any) => ({
-            id: m.id,
-            name: m.name,
-            initials: m.initials,
-          }));
-        setMembers(memberUsers);
       } catch (err) {
         console.error('Failed to fetch data:', err);
         setError(err instanceof Error ? err.message : 'データの取得に失敗しました');
@@ -136,11 +138,11 @@ export default function ContractPage() {
         <CardContent className="grid gap-6 md:grid-cols-2">
           <div>
             <p className="text-sm text-muted-foreground mb-1">施設名</p>
-            <p className="font-semibold text-lg">社会福祉法人 サンプル施設</p>
+            <p className="font-semibold text-lg">{facilityName || "読み込み中..."}</p>
           </div>
           <div>
             <p className="text-sm text-muted-foreground mb-1">契約プラン</p>
-            <p className="font-semibold text-lg">スタンダードプラン</p>
+            <p className="font-semibold text-lg">{formatPlanType(planType)}</p>
           </div>
           <div>
             <p className="text-sm text-muted-foreground mb-1">契約開始日</p>
@@ -151,8 +153,8 @@ export default function ContractPage() {
             <p className="font-semibold">2025年4月1日</p>
           </div>
           <div>
-            <p className="text-sm text-muted-foreground mb-1">ご契約担当者</p>
-            <p className="font-semibold">山田 太郎 様</p>
+            <p className="text-sm text-muted-foreground mb-1">契約利用者数</p>
+            <p className="font-semibold">{memberCount}名</p>
           </div>
           <div>
             <p className="text-sm text-muted-foreground mb-1">連絡先</p>
@@ -171,7 +173,12 @@ export default function ContractPage() {
                 <Users className="h-5 w-5 text-purple-600" />
                 利用者数
               </CardTitle>
-              <Button variant="outline" size="sm" className="gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                onClick={() => window.location.href = '/app/requests'}
+              >
                 <Edit className="h-3 w-3" />
                 変更申請
               </Button>
@@ -183,18 +190,18 @@ export default function ContractPage() {
                 <p className="text-sm text-muted-foreground mb-1">
                   契約利用者数
                 </p>
-                <p className="text-3xl font-bold">25名</p>
+                <p className="text-3xl font-bold">{memberCount}名</p>
               </div>
               <div className="grid grid-cols-2 gap-4 pt-4 border-t">
                 <div>
                   <p className="text-sm text-muted-foreground mb-1">稼働中</p>
-                  <p className="text-xl font-semibold text-green-600">25名</p>
+                  <p className="text-xl font-semibold text-green-600">{memberCount}名</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground mb-1">
                     追加可能
                   </p>
-                  <p className="text-xl font-semibold text-blue-600">5名</p>
+                  <p className="text-xl font-semibold text-blue-600">-</p>
                 </div>
               </div>
             </div>
@@ -209,7 +216,12 @@ export default function ContractPage() {
                 <CreditCard className="h-5 w-5 text-green-600" />
                 お支払い情報
               </CardTitle>
-              <Button variant="outline" size="sm" className="gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                onClick={() => window.location.href = '/app/requests'}
+              >
                 <Edit className="h-3 w-3" />
                 変更申請
               </Button>
