@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { StatCard } from "@/components/ui/stat-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +15,7 @@ import {
   ChevronRight,
   TrendingUp,
 } from "lucide-react";
+import { getFacility, getFacilityStats, formatPlanType, formatWagePhase } from "@/lib/api/client";
 
 // Announcements data
 const announcements = [
@@ -97,11 +98,47 @@ export default function HomePage() {
   const [selectedYear, setSelectedYear] = useState<number>(2024);
   const [selectedMonth, setSelectedMonth] = useState<number>(12);
 
-  // TODO: 本番環境ではAPIから取得
-  const currentPlan = "RevelAppコース A-フレキシブル";
-  const userCount = 25;
-  const nextDeadline = "2024年12月15日";
-  const continuationMonths = 7; // 継続月数
+  // API data state
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [currentPlan, setCurrentPlan] = useState("読込中...");
+  const [userCount, setUserCount] = useState(0);
+  const [continuationMonths, setContinuationMonths] = useState(0);
+  const [currentWagePhase, setCurrentWagePhase] = useState<{
+    phase: string;
+    levels: Array<{ level: number; wage: number }>;
+  } | null>(null);
+
+  const nextDeadline = "2024年12月15日"; // これは固定値
+
+  // Fetch data from API
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        setLoading(true);
+        setError(null);
+
+        // APIから事業所情報と統計情報を取得
+        const [facilityData, statsData] = await Promise.all([
+          getFacility(),
+          getFacilityStats(),
+        ]);
+
+        // データをstateに設定
+        setCurrentPlan(formatPlanType(facilityData.facility.planType));
+        setUserCount(statsData.stats.activeMemberCount);
+        setContinuationMonths(statsData.stats.continuationMonths);
+        setCurrentWagePhase(formatWagePhase(statsData.stats.wagePhase));
+      } catch (err) {
+        console.error('Failed to fetch data:', err);
+        setError(err instanceof Error ? err.message : '�データの取得に失敗しました');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchData();
+  }, []);
 
   // Determine current phase
   const getCurrentPhase = () => {
@@ -163,6 +200,44 @@ export default function HomePage() {
     if (!day) return null;
     return importantDates.find(d => d.date === day);
   };
+
+  // ローディング中の表示
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold tracking-tight text-gray-900">ホーム</h1>
+          <p className="text-gray-600 mt-1">施設の運営状況を一目で確認できます</p>
+        </div>
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+      </div>
+    );
+  }
+
+  // エラー時の表示
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold tracking-tight text-gray-900">ホーム</h1>
+          <p className="text-gray-600 mt-1">施設の運営状況を一目で確認できます</p>
+        </div>
+        <Card className="border-red-200 bg-red-50">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3 text-red-700">
+              <AlertCircle className="h-5 w-5" />
+              <div>
+                <p className="font-semibold">データの読み込みに失敗しました</p>
+                <p className="text-sm mt-1">{error}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
