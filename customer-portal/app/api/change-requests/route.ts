@@ -18,28 +18,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 開発環境では固定のfacilityIdを使用し、requesterは最初のユーザーを取得
+    // 開発環境では固定のユーザーを取得し、そこからfacilityIdを取得
     // 本番環境ではJWTトークンから取得
-    const DEV_FACILITY_ID = 'test-facility-1';
+    const DEV_USER_ID = 'test-user-staff-001';
 
-    // 事業所の最初のユーザーを取得（開発用）
-    const firstUser = await prisma.user.findFirst({
+    // 開発用のユーザーを取得
+    const firstUser = await prisma.user.findUnique({
       where: {
-        facilityId: DEV_FACILITY_ID,
+        id: DEV_USER_ID,
       },
     });
 
     if (!firstUser) {
       return NextResponse.json(
-        { error: 'No users found in facility' },
+        { error: 'Development user not found' },
         { status: 400 }
       );
     }
 
+    const facilityId = firstUser.facilityId;
+
     // 変更申請を作成
     const changeRequest = await prisma.changeRequest.create({
       data: {
-        facilityId: DEV_FACILITY_ID,
+        facilityId: facilityId,
         requesterId: firstUser.id,
         requestType,
         requestData,
@@ -72,13 +74,27 @@ export async function POST(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
   try {
-    // 開発環境では固定のfacilityIdを使用
-    const DEV_FACILITY_ID = 'test-facility-1';
+    // 開発環境では固定のユーザーを取得し、そこからfacilityIdを取得
+    // 本番環境ではJWTトークンから取得
+    const DEV_USER_ID = 'test-user-staff-001';
+
+    const user = await prisma.user.findUnique({
+      where: { id: DEV_USER_ID },
+    });
+
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Development user not found' },
+        { status: 400 }
+      );
+    }
+
+    const facilityId = user.facilityId;
 
     // 変更申請一覧を取得（新しい順）
     const changeRequests = await prisma.changeRequest.findMany({
       where: {
-        facilityId: DEV_FACILITY_ID,
+        facilityId: facilityId,
       },
       include: {
         requester: {
