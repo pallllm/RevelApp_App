@@ -485,9 +485,13 @@ export default function ContractPage() {
             </div>
           </div>
           <div className="mt-4 pt-4 border-t">
-            <Button variant="outline" className="gap-2">
+            <Button
+              variant="outline"
+              className="gap-2"
+              onClick={() => window.location.href = '/app/requests'}
+            >
               <Edit className="h-4 w-4" />
-              振込先変更申請
+              変更申請
             </Button>
           </div>
         </CardContent>
