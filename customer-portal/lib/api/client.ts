@@ -182,3 +182,43 @@ export async function getWageCarryover(year?: number, month?: number) {
     } | null;
   }>(`/api/wages/carryover${params}`);
 }
+
+/**
+ * 体調記録を取得
+ */
+export async function getHealthRecords(userId: string, year: number, month: number) {
+  return apiRequest<{
+    records: Array<{
+      date: string;
+      fatigueLevel: number | null;
+      sleepHours: number | null;
+      mood: string | null;
+      emotions: any;
+      weather: string | null;
+      temperature: number | null;
+      hasPressureChange: boolean;
+      achievedTasks: string | null;
+      difficultTasks: string | null;
+      freeNotes: string | null;
+    }>;
+  }>(`/api/health-records?userId=${userId}&year=${year}&month=${month}`);
+}
+
+/**
+ * ゲームプレイ統計を取得
+ */
+export async function getGameStats(userId: string, year: number, month: number) {
+  return apiRequest<{
+    gameStats: Array<{
+      gameId: string;
+      gameName: string;
+      gameLevel: number;
+      gameImageUrl: string | null;
+      playCount: number;
+    }>;
+    totalPlayCount: number;
+    totalAllTimePlayCount: number;
+    previousMonthPlayCount: number;
+    playCountDifference: number;
+  }>(`/api/game-stats?userId=${userId}&year=${year}&month=${month}`);
+}

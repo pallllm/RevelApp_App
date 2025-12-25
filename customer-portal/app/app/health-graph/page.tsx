@@ -31,70 +31,32 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { GAMES } from "@/lib/constants";
-import { getFacility } from "@/lib/api/client";
+import { getFacility, getHealthRecords, getGameStats } from "@/lib/api/client";
 
-// Sample data - 1ヶ月分のデータ
-const dailyHealthData = Array.from({ length: 31 }, (_, i) => {
-  const day = i + 1;
-  return {
-    day,
-    fatigue: Math.floor(Math.random() * 40) + 30,
-    sleepHours: parseFloat((Math.random() * 3 + 5).toFixed(1)),
-    temperature: parseFloat((Math.random() * 10 + 15).toFixed(1)),
-    pressure: Math.floor(Math.random() * 30) + 1000,
-    weather: ["sunny", "cloudy", "rainy", "snow"][Math.floor(Math.random() * 4)],
-  };
-});
-
-// 気圧の大きな変化がある日を検出
-const detectPressureChanges = () => {
-  const changes = [];
-  for (let i = 1; i < dailyHealthData.length; i++) {
-    const diff = Math.abs(dailyHealthData[i].pressure - dailyHealthData[i - 1].pressure);
-    if (diff > 15) {
-      // 15hPa以上の変化
-      changes.push(dailyHealthData[i].day);
-    }
-  }
-  return changes;
+// 型定義
+type DailyHealthData = {
+  day: number;
+  fatigue: number | null;
+  sleepHours: number | null;
+  temperature: number | null;
+  weather: string | null;
+  hasPressureChange: boolean;
 };
 
-const pressureChangeDays = detectPressureChanges();
+type GameStat = {
+  gameId: string;
+  gameName: string;
+  gameLevel: number;
+  gameImageUrl: string | null;
+  playCount: number;
+};
 
-// プレイしたゲーム（メダル表示用）
-const playedGames = [
-  { id: "gesoten", playCount: 50, isRecent: true },
-  { id: "mcheroes", playCount: 73, isRecent: true },
-  { id: "elf1", playCount: 23, isRecent: true },
-  { id: "axie-tri", playCount: 16, isRecent: false },
-  { id: "xeno", playCount: 12, isRecent: true },
-  { id: "elf2", playCount: 8, isRecent: false },
-];
-
-// 記録がある日（カレンダー用）
-const recordedDays = [1, 3, 5, 8, 9, 10, 11, 12, 15, 17, 19, 22, 24, 25, 29];
-
-// 記録データ
-const records = [
-  {
-    date: "2024-12-24",
-    achievements: "ゲームを3回クリアできた",
-    challenges: "集中力が続かなかった",
-    notes: "朝から元気でした",
-  },
-  {
-    date: "2024-12-23",
-    achievements: "新しいゲームに挑戦した",
-    challenges: "ルールの理解に時間がかかった",
-    notes: "楽しかった",
-  },
-  {
-    date: "2024-12-22",
-    achievements: "早起きできた",
-    challenges: "特になし",
-    notes: "調子良かったです",
-  },
-];
+type HealthRecord = {
+  date: string;
+  achievedTasks: string | null;
+  difficultTasks: string | null;
+  freeNotes: string | null;
+};
 
 // 天気アイコンを取得
 const getWeatherIcon = (weather: string, small = false) => {
@@ -121,33 +83,6 @@ interface User {
   role: string;
 }
 
-// カスタムドット（気温の折れ線グラフ用 - 天気アイコンと気圧変化アイコンを表示）
-const CustomDot = (props: any) => {
-  const { cx, cy, payload } = props;
-  const weatherData = dailyHealthData.find((d) => d.day === payload.day);
-  const hasPressureChange = pressureChangeDays.includes(payload.day);
-
-  return (
-    <g>
-      <circle cx={cx} cy={cy} r={3} fill="#3b82f6" />
-      {/* 天気アイコン */}
-      <foreignObject x={cx - 10} y={cy - 25} width={20} height={20}>
-        <div className="flex items-center justify-center">
-          {weatherData && getWeatherIcon(weatherData.weather, true)}
-        </div>
-      </foreignObject>
-      {/* 気圧変化アイコン */}
-      {hasPressureChange && (
-        <foreignObject x={cx - 8} y={cy - 45} width={16} height={16}>
-          <div className="flex items-center justify-center">
-            <Activity className="h-4 w-4 text-red-500" />
-          </div>
-        </foreignObject>
-      )}
-    </g>
-  );
-};
-
 export default function HealthGraphPage() {
   // API data state
   const [loading, setLoading] = useState(true);
@@ -157,6 +92,15 @@ export default function HealthGraphPage() {
   const [selectedYear, setSelectedYear] = useState<number>(2024);
   const [selectedMonth, setSelectedMonth] = useState<number>(12);
   const [selectedUserId, setSelectedUserId] = useState<string>("");
+
+  // Health data state
+  const [dailyHealthData, setDailyHealthData] = useState<DailyHealthData[]>([]);
+  const [gameStats, setGameStats] = useState<GameStat[]>([]);
+  const [healthRecords, setHealthRecords] = useState<HealthRecord[]>([]);
+  const [totalPlayCount, setTotalPlayCount] = useState<number>(0);
+  const [playCountDifference, setPlayCountDifference] = useState<number>(0);
+  const [averageSleep, setAverageSleep] = useState<number>(0);
+  const [sleepDifference, setSleepDifference] = useState<number>(0);
 
   // Fetch users from API
   useEffect(() => {
@@ -188,6 +132,74 @@ export default function HealthGraphPage() {
     fetchUsers();
   }, []);
 
+  // Fetch health data when user/year/month changes
+  useEffect(() => {
+    if (!selectedUserId) return;
+
+    async function fetchHealthData() {
+      try {
+        setLoading(true);
+        setError(null);
+
+        // 体調記録を取得
+        const healthData = await getHealthRecords(selectedUserId, selectedYear, selectedMonth);
+
+        // ゲーム統計を取得
+        const gameData = await getGameStats(selectedUserId, selectedYear, selectedMonth);
+
+        // 日別データを変換
+        const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
+        const dailyData: DailyHealthData[] = [];
+
+        for (let day = 1; day <= daysInMonth; day++) {
+          const dateStr = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+          const record = healthData.records.find(r => r.date === dateStr);
+
+          dailyData.push({
+            day,
+            fatigue: record?.fatigueLevel || null,
+            sleepHours: record?.sleepHours || null,
+            temperature: record?.temperature || null,
+            weather: record?.weather || null,
+            hasPressureChange: record?.hasPressureChange || false,
+          });
+        }
+
+        setDailyHealthData(dailyData);
+        setGameStats(gameData.gameStats);
+        setHealthRecords(
+          healthData.records
+            .filter(r => r.achievedTasks || r.difficultTasks || r.freeNotes)
+            .map(r => ({
+              date: r.date,
+              achievedTasks: r.achievedTasks,
+              difficultTasks: r.difficultTasks,
+              freeNotes: r.freeNotes,
+            }))
+        );
+        setTotalPlayCount(gameData.totalAllTimePlayCount);
+        setPlayCountDifference(gameData.playCountDifference);
+
+        // 平均睡眠時間を計算
+        const sleepRecords = dailyData.filter(d => d.sleepHours !== null);
+        const avgSleep = sleepRecords.length > 0
+          ? sleepRecords.reduce((sum, d) => sum + (d.sleepHours || 0), 0) / sleepRecords.length
+          : 0;
+        setAverageSleep(avgSleep);
+
+        // TODO: 前月との睡眠時間差分を計算（現在は仮で0）
+        setSleepDifference(0);
+      } catch (err) {
+        console.error('Failed to fetch health data:', err);
+        setError(err instanceof Error ? err.message : 'データの取得に失敗しました');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchHealthData();
+  }, [selectedUserId, selectedYear, selectedMonth]);
+
   // カレンダー生成
   const generateCalendarDays = () => {
     const year = selectedYear;
@@ -213,6 +225,37 @@ export default function HealthGraphPage() {
     today.getFullYear() === selectedYear && today.getMonth() + 1 === selectedMonth;
 
   const selectedUser = users.find((u) => u.id === selectedUserId);
+
+  // 記録がある日を抽出
+  const recordedDays = dailyHealthData
+    .filter(d => d.fatigue !== null || d.sleepHours !== null || d.temperature !== null)
+    .map(d => d.day);
+
+  // カスタムドット（気温の折れ線グラフ用 - 天気アイコンと気圧変化アイコンを表示）
+  const CustomDot = (props: any) => {
+    const { cx, cy, payload } = props;
+    const weatherData = dailyHealthData.find((d) => d.day === payload.day);
+
+    return (
+      <g>
+        <circle cx={cx} cy={cy} r={3} fill="#3b82f6" />
+        {/* 天気アイコン */}
+        <foreignObject x={cx - 10} y={cy - 25} width={20} height={20}>
+          <div className="flex items-center justify-center">
+            {weatherData?.weather && getWeatherIcon(weatherData.weather, true)}
+          </div>
+        </foreignObject>
+        {/* 気圧変化アイコン */}
+        {weatherData?.hasPressureChange && (
+          <foreignObject x={cx - 8} y={cy - 45} width={16} height={16}>
+            <div className="flex items-center justify-center">
+              <Activity className="h-4 w-4 text-red-500" />
+            </div>
+          </foreignObject>
+        )}
+      </g>
+    );
+  };
 
   // ローディング中の表示
   if (loading) {
@@ -315,10 +358,16 @@ export default function HealthGraphPage() {
                 </div>
               </div>
               <p className="text-xs text-gray-600 mb-1">累計プレイ回数</p>
-              <p className="text-3xl font-bold text-gray-900">230回</p>
+              <p className="text-3xl font-bold text-gray-900">{totalPlayCount}回</p>
               <div className="flex items-center gap-1 mt-1">
-                <TrendingUp className="h-4 w-4 text-green-600" />
-                <p className="text-xs text-green-600 font-medium">+14回</p>
+                {playCountDifference >= 0 ? (
+                  <TrendingUp className="h-4 w-4 text-green-600" />
+                ) : (
+                  <TrendingDown className="h-4 w-4 text-orange-600" />
+                )}
+                <p className={`text-xs font-medium ${playCountDifference >= 0 ? 'text-green-600' : 'text-orange-600'}`}>
+                  {playCountDifference >= 0 ? '+' : ''}{playCountDifference}回
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -331,10 +380,16 @@ export default function HealthGraphPage() {
                 </div>
               </div>
               <p className="text-xs text-gray-600 mb-1">平均睡眠時間</p>
-              <p className="text-3xl font-bold text-gray-900">6.2時間</p>
+              <p className="text-3xl font-bold text-gray-900">{averageSleep.toFixed(1)}時間</p>
               <div className="flex items-center gap-1 mt-1">
-                <TrendingDown className="h-4 w-4 text-orange-600" />
-                <p className="text-xs text-orange-600 font-medium">-0.5時間</p>
+                {sleepDifference >= 0 ? (
+                  <TrendingUp className="h-4 w-4 text-green-600" />
+                ) : (
+                  <TrendingDown className="h-4 w-4 text-orange-600" />
+                )}
+                <p className={`text-xs font-medium ${sleepDifference >= 0 ? 'text-green-600' : 'text-orange-600'}`}>
+                  {sleepDifference >= 0 ? '+' : ''}{sleepDifference.toFixed(1)}時間
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -347,8 +402,10 @@ export default function HealthGraphPage() {
                 </div>
               </div>
               <p className="text-xs text-gray-600 mb-1">現在のランク</p>
-              <p className="text-2xl font-bold text-gray-900">ゴールド</p>
-              <p className="text-xs text-gray-600 mt-1">230回達成</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {totalPlayCount >= 200 ? 'ゴールド' : totalPlayCount >= 100 ? 'シルバー' : totalPlayCount >= 50 ? 'ブロンズ' : 'ビギナー'}
+              </p>
+              <p className="text-xs text-gray-600 mt-1">{totalPlayCount}回達成</p>
             </CardContent>
           </Card>
         </div>
@@ -359,35 +416,39 @@ export default function HealthGraphPage() {
             <CardTitle className="text-base text-gray-900">プレイしたゲーム</CardTitle>
           </CardHeader>
           <CardContent className="pt-4">
-            <div className="flex gap-6 justify-center flex-wrap">
-              {playedGames.map((game) => {
-                const gameInfo = GAMES.find((g) => g.id === game.id);
-                if (!gameInfo) return null;
-                return (
-                  <div key={game.id} className="text-center relative">
+            {gameStats.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                今月のゲームプレイデータがありません
+              </p>
+            ) : (
+              <div className="flex gap-6 justify-center flex-wrap">
+                {gameStats.map((game) => (
+                  <div key={game.gameId} className="text-center relative">
                     <div className="relative">
                       <div className="w-16 h-16 rounded-full overflow-hidden border-3 border-gray-200 shadow-sm">
-                        <Image
-                          src={gameInfo.image}
-                          alt={gameInfo.name}
-                          width={64}
-                          height={64}
-                          className="object-cover"
-                        />
+                        {game.gameImageUrl ? (
+                          <Image
+                            src={game.gameImageUrl}
+                            alt={game.gameName}
+                            width={64}
+                            height={64}
+                            className="object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white font-bold">
+                            {game.gameName.charAt(0)}
+                          </div>
+                        )}
                       </div>
-                      <Badge
-                        className={`absolute -top-1 -right-1 ${
-                          game.isRecent ? "bg-blue-500" : "bg-gray-400"
-                        } text-white font-bold text-xs`}
-                      >
+                      <Badge className="absolute -top-1 -right-1 bg-blue-500 text-white font-bold text-xs">
                         {game.playCount}
                       </Badge>
                     </div>
-                    <p className="text-xs font-medium mt-2 w-20 text-gray-700">{gameInfo.name}</p>
+                    <p className="text-xs font-medium mt-2 w-20 text-gray-700 truncate">{game.gameName}</p>
                   </div>
-                );
-              })}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -509,26 +570,32 @@ export default function HealthGraphPage() {
           <CardTitle className="text-base text-gray-900">日々の記録</CardTitle>
         </CardHeader>
         <CardContent className="pt-4">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b-2 border-gray-200">
-                <th className="text-left py-2 font-semibold text-gray-700">日付</th>
-                <th className="text-left py-2 font-semibold text-gray-700">できたこと</th>
-                <th className="text-left py-2 font-semibold text-gray-700">難しかったこと</th>
-                <th className="text-left py-2 font-semibold text-gray-700">コメント</th>
-              </tr>
-            </thead>
-            <tbody>
-              {records.map((record, index) => (
-                <tr key={index} className="border-b border-gray-100 hover:bg-gray-50">
-                  <td className="py-3 font-medium text-gray-900">{record.date}</td>
-                  <td className="py-3 text-gray-700">{record.achievements}</td>
-                  <td className="py-3 text-gray-700">{record.challenges}</td>
-                  <td className="py-3 text-gray-700">{record.notes}</td>
+          {healthRecords.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8">
+              記録がありません
+            </p>
+          ) : (
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b-2 border-gray-200">
+                  <th className="text-left py-2 font-semibold text-gray-700">日付</th>
+                  <th className="text-left py-2 font-semibold text-gray-700">できたこと</th>
+                  <th className="text-left py-2 font-semibold text-gray-700">難しかったこと</th>
+                  <th className="text-left py-2 font-semibold text-gray-700">コメント</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {healthRecords.map((record, index) => (
+                  <tr key={index} className="border-b border-gray-100 hover:bg-gray-50">
+                    <td className="py-3 font-medium text-gray-900">{record.date}</td>
+                    <td className="py-3 text-gray-700">{record.achievedTasks || '-'}</td>
+                    <td className="py-3 text-gray-700">{record.difficultTasks || '-'}</td>
+                    <td className="py-3 text-gray-700">{record.freeNotes || '-'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </CardContent>
       </Card>
     </div>
