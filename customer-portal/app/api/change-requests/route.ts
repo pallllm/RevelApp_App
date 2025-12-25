@@ -18,16 +18,29 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 開発環境では固定のfacilityIdとrequesterIdを使用
+    // 開発環境では固定のfacilityIdを使用し、requesterは最初のユーザーを取得
     // 本番環境ではJWTトークンから取得
     const DEV_FACILITY_ID = 'test-facility-1';
-    const DEV_REQUESTER_ID = 'test-staff-1'; // STAFFユーザー
+
+    // 事業所の最初のユーザーを取得（開発用）
+    const firstUser = await prisma.user.findFirst({
+      where: {
+        facilityId: DEV_FACILITY_ID,
+      },
+    });
+
+    if (!firstUser) {
+      return NextResponse.json(
+        { error: 'No users found in facility' },
+        { status: 400 }
+      );
+    }
 
     // 変更申請を作成
     const changeRequest = await prisma.changeRequest.create({
       data: {
         facilityId: DEV_FACILITY_ID,
-        requesterId: DEV_REQUESTER_ID,
+        requesterId: firstUser.id,
         requestType,
         requestData,
         notes: notes || null,
