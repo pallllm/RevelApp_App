@@ -101,10 +101,25 @@ export async function POST() {
           freeNotes: Math.random() > 0.5 ? notes[Math.floor(Math.random() * notes.length)] : null,
         });
 
-        // その日に1-5回ゲームプレイ記録を作成
-        const playCount = Math.floor(Math.random() * 5) + 1;
+        // ゲーム数に応じてプレイ回数を調整（バランス改善）
+        // ゲームが少ない場合は各ゲームを均等にプレイ、多い場合はランダム
+        const basePlayCount = Math.min(games.length, 3); // 基本1-3回
+        const playCount = Math.floor(Math.random() * basePlayCount) + 1;
+
+        // ゲームを重複なく選択（可能な限り）
+        const selectedGames = new Set<string>();
         for (let j = 0; j < playCount; j++) {
-          const randomGame = games[Math.floor(Math.random() * games.length)];
+          let randomGame;
+          let attempts = 0;
+
+          // 重複を避けつつランダム選択（最大10回試行）
+          do {
+            randomGame = games[Math.floor(Math.random() * games.length)];
+            attempts++;
+          } while (selectedGames.has(randomGame.id) && attempts < 10 && selectedGames.size < games.length);
+
+          selectedGames.add(randomGame.id);
+
           const playTime = new Date(date);
           playTime.setHours(9 + Math.floor(Math.random() * 8)); // 9:00-17:00
           playTime.setMinutes(Math.floor(Math.random() * 60));

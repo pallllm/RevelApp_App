@@ -346,182 +346,83 @@ export default function HealthGraphPage() {
         </div>
       </div>
 
-      {/* 第1行: サマリー指標とゲームメダル */}
-      <div className="grid grid-cols-2 gap-6">
-        {/* 左側: サマリー指標 */}
-        <div className="grid grid-cols-3 gap-4">
-          <Card className="border border-gray-200 shadow-sm">
-            <CardContent className="pt-6 pb-4">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
-                  <Gamepad2 className="h-5 w-5 text-blue-600" />
-                </div>
-              </div>
-              <p className="text-xs text-gray-600 mb-1">累計プレイ回数</p>
-              <p className="text-3xl font-bold text-gray-900">{totalPlayCount}回</p>
-              <div className="flex items-center gap-1 mt-1">
-                {playCountDifference >= 0 ? (
-                  <TrendingUp className="h-4 w-4 text-green-600" />
-                ) : (
-                  <TrendingDown className="h-4 w-4 text-orange-600" />
-                )}
-                <p className={`text-xs font-medium ${playCountDifference >= 0 ? 'text-green-600' : 'text-orange-600'}`}>
-                  {playCountDifference >= 0 ? '+' : ''}{playCountDifference}回
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border border-gray-200 shadow-sm">
-            <CardContent className="pt-6 pb-4">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
-                  <Moon className="h-5 w-5 text-blue-600" />
-                </div>
-              </div>
-              <p className="text-xs text-gray-600 mb-1">平均睡眠時間</p>
-              <p className="text-3xl font-bold text-gray-900">{averageSleep.toFixed(1)}時間</p>
-              <div className="flex items-center gap-1 mt-1">
-                {sleepDifference >= 0 ? (
-                  <TrendingUp className="h-4 w-4 text-green-600" />
-                ) : (
-                  <TrendingDown className="h-4 w-4 text-orange-600" />
-                )}
-                <p className={`text-xs font-medium ${sleepDifference >= 0 ? 'text-green-600' : 'text-orange-600'}`}>
-                  {sleepDifference >= 0 ? '+' : ''}{sleepDifference.toFixed(1)}時間
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border border-gray-200 shadow-sm">
-            <CardContent className="pt-6 pb-4">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
-                  <span className="text-xl">🏆</span>
-                </div>
-              </div>
-              <p className="text-xs text-gray-600 mb-1">現在のランク</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {totalPlayCount >= 200 ? 'ゴールド' : totalPlayCount >= 100 ? 'シルバー' : totalPlayCount >= 50 ? 'ブロンズ' : 'ビギナー'}
-              </p>
-              <p className="text-xs text-gray-600 mt-1">{totalPlayCount}回達成</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* 右側: プレイしたゲーム */}
+      {/* 第1行: サマリー指標 */}
+      <div className="grid grid-cols-4 gap-4">
         <Card className="border border-gray-200 shadow-sm">
-          <CardHeader className="pb-3 bg-gray-50 border-b">
-            <CardTitle className="text-base text-gray-900">プレイしたゲーム</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-4">
-            {gameStats.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-8">
-                今月のゲームプレイデータがありません
-              </p>
-            ) : (
-              <div className="flex gap-6 justify-center flex-wrap">
-                {gameStats.map((game) => (
-                  <div key={game.gameId} className="text-center relative">
-                    <div className="relative">
-                      <div className="w-16 h-16 rounded-full overflow-hidden border-3 border-gray-200 shadow-sm">
-                        {game.gameImageUrl ? (
-                          <Image
-                            src={game.gameImageUrl}
-                            alt={game.gameName}
-                            width={64}
-                            height={64}
-                            className="object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white font-bold">
-                            {game.gameName.charAt(0)}
-                          </div>
-                        )}
-                      </div>
-                      <Badge className="absolute -top-1 -right-1 bg-blue-500 text-white font-bold text-xs">
-                        {game.playCount}
-                      </Badge>
-                    </div>
-                    <p className="text-xs font-medium mt-2 w-20 text-gray-700 truncate">{game.gameName}</p>
-                  </div>
-                ))}
+          <CardContent className="pt-6 pb-4">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                <Gamepad2 className="h-5 w-5 text-blue-600" />
               </div>
-            )}
+            </div>
+            <p className="text-xs text-gray-600 mb-1">累計プレイ回数</p>
+            <p className="text-3xl font-bold text-gray-900">{totalPlayCount}回</p>
+            <div className="flex items-center gap-1 mt-1">
+              {playCountDifference >= 0 ? (
+                <TrendingUp className="h-4 w-4 text-green-600" />
+              ) : (
+                <TrendingDown className="h-4 w-4 text-orange-600" />
+              )}
+              <p className={`text-xs font-medium ${playCountDifference >= 0 ? 'text-green-600' : 'text-orange-600'}`}>
+                {playCountDifference >= 0 ? '+' : ''}{playCountDifference}回
+              </p>
+            </div>
           </CardContent>
         </Card>
-      </div>
 
-      {/* 第2行: 統合グラフとカレンダー */}
-      <div className="grid grid-cols-3 gap-6">
-        {/* 疲労度・睡眠時間・気温グラフ */}
-        <Card className="col-span-2 border border-gray-200 shadow-sm">
-          <CardHeader className="pb-3 bg-gray-50 border-b">
-            <CardTitle className="text-base text-gray-900 flex items-center gap-2">
-              疲労度・睡眠時間・気温
-              <span className="text-xs font-normal text-gray-500">
-                (気圧変化: <Activity className="h-3 w-3 inline text-red-500" />)
-              </span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-4">
-            <ResponsiveContainer width="100%" height={220}>
-              <ComposedChart data={dailyHealthData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis dataKey="day" fontSize={10} />
-                <YAxis
-                  yAxisId="left"
-                  domain={[0, 100]}
-                  fontSize={10}
-                  label={{
-                    value: "疲労(%)/睡眠(h)",
-                    angle: -90,
-                    position: "insideLeft",
-                    fontSize: 10,
-                  }}
-                />
-                <YAxis
-                  yAxisId="right"
-                  orientation="right"
-                  domain={[0, 30]}
-                  fontSize={10}
-                  label={{ value: "気温(℃)", angle: 90, position: "insideRight", fontSize: 10 }}
-                />
-                <Tooltip />
-                <Legend iconSize={10} wrapperStyle={{ fontSize: "10px" }} />
-                <Bar yAxisId="left" dataKey="fatigue" fill="#f97316" name="疲労度(%)" />
-                <Bar yAxisId="left" dataKey="sleepHours" fill="#3b82f6" name="睡眠(h)" />
-                <Line
-                  yAxisId="right"
-                  type="monotone"
-                  dataKey="temperature"
-                  stroke="#3b82f6"
-                  strokeWidth={2}
-                  name="気温(℃)"
-                  dot={<CustomDot />}
-                />
-              </ComposedChart>
-            </ResponsiveContainer>
+        <Card className="border border-gray-200 shadow-sm">
+          <CardContent className="pt-6 pb-4">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                <Moon className="h-5 w-5 text-blue-600" />
+              </div>
+            </div>
+            <p className="text-xs text-gray-600 mb-1">平均睡眠時間</p>
+            <p className="text-3xl font-bold text-gray-900">{averageSleep.toFixed(1)}時間</p>
+            <div className="flex items-center gap-1 mt-1">
+              {sleepDifference >= 0 ? (
+                <TrendingUp className="h-4 w-4 text-green-600" />
+              ) : (
+                <TrendingDown className="h-4 w-4 text-orange-600" />
+              )}
+              <p className={`text-xs font-medium ${sleepDifference >= 0 ? 'text-green-600' : 'text-orange-600'}`}>
+                {sleepDifference >= 0 ? '+' : ''}{sleepDifference.toFixed(1)}時間
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border border-gray-200 shadow-sm">
+          <CardContent className="pt-6 pb-4">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                <span className="text-xl">🏆</span>
+              </div>
+            </div>
+            <p className="text-xs text-gray-600 mb-1">現在のランク</p>
+            <p className="text-2xl font-bold text-gray-900">
+              {totalPlayCount >= 200 ? 'ゴールド' : totalPlayCount >= 100 ? 'シルバー' : totalPlayCount >= 50 ? 'ブロンズ' : 'ビギナー'}
+            </p>
+            <p className="text-xs text-gray-600 mt-1">{totalPlayCount}回達成</p>
           </CardContent>
         </Card>
 
         {/* カレンダー */}
         <Card className="border border-gray-200 shadow-sm">
-          <CardHeader className="pb-3 bg-gray-50 border-b">
-            <CardTitle className="text-base text-gray-900">
+          <CardHeader className="pb-2 bg-gray-50 border-b">
+            <CardTitle className="text-sm text-gray-900">
               {selectedYear}年{selectedMonth}月
             </CardTitle>
           </CardHeader>
-          <CardContent className="pt-4">
-            <div className="grid grid-cols-7 gap-1 mb-2">
+          <CardContent className="pt-3">
+            <div className="grid grid-cols-7 gap-0.5 mb-1">
               {["日", "月", "火", "水", "木", "金", "土"].map((day, i) => (
-                <div key={i} className="text-center text-xs font-medium text-gray-500">
+                <div key={i} className="text-center text-[10px] font-medium text-gray-500">
                   {day}
                 </div>
               ))}
             </div>
-            <div className="grid grid-cols-7 gap-2">
+            <div className="grid grid-cols-7 gap-1">
               {calendarDays.map((day, index) => {
                 const hasRecord = day && recordedDays.includes(day);
                 const isTodayDate = isCurrentMonth && day === today.getDate();
@@ -530,11 +431,11 @@ export default function HealthGraphPage() {
                   <div key={index} className="aspect-square flex items-center justify-center">
                     {day && (
                       <button
-                        className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-medium transition-all ${
+                        className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-medium transition-all ${
                           isTodayDate
-                            ? "bg-gradient-to-br from-blue-500 to-cyan-500 text-white shadow-lg ring-2 ring-blue-300"
+                            ? "bg-gradient-to-br from-blue-500 to-cyan-500 text-white shadow-lg ring-1 ring-blue-300"
                             : hasRecord
-                            ? "bg-gradient-to-br from-purple-400 to-pink-400 text-white shadow-md hover:shadow-lg"
+                            ? "bg-gradient-to-br from-purple-400 to-pink-400 text-white shadow-sm hover:shadow-md"
                             : "text-gray-700 hover:bg-gray-100"
                         }`}
                       >
@@ -548,6 +449,99 @@ export default function HealthGraphPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* 第2行: メイングラフ（疲労度・睡眠時間・気温） */}
+      <Card className="border border-gray-200 shadow-sm">
+        <CardHeader className="pb-3 bg-gray-50 border-b">
+          <CardTitle className="text-base text-gray-900 flex items-center gap-2">
+            疲労度・睡眠時間・気温
+            <span className="text-xs font-normal text-gray-500">
+              (気圧変化: <Activity className="h-3 w-3 inline text-red-500" />)
+            </span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-6">
+          <ResponsiveContainer width="100%" height={350}>
+            <ComposedChart data={dailyHealthData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+              <XAxis dataKey="day" fontSize={11} />
+              <YAxis
+                yAxisId="left"
+                domain={[0, 100]}
+                fontSize={11}
+                label={{
+                  value: "疲労(%)/睡眠(h)",
+                  angle: -90,
+                  position: "insideLeft",
+                  fontSize: 11,
+                }}
+              />
+              <YAxis
+                yAxisId="right"
+                orientation="right"
+                domain={[0, 30]}
+                fontSize={11}
+                label={{ value: "気温(℃)", angle: 90, position: "insideRight", fontSize: 11 }}
+              />
+              <Tooltip />
+              <Legend iconSize={12} wrapperStyle={{ fontSize: "12px" }} />
+              <Bar yAxisId="left" dataKey="fatigue" fill="#f97316" name="疲労度(%)" />
+              <Bar yAxisId="left" dataKey="sleepHours" fill="#3b82f6" name="睡眠(h)" />
+              <Line
+                yAxisId="right"
+                type="monotone"
+                dataKey="temperature"
+                stroke="#3b82f6"
+                strokeWidth={2}
+                name="気温(℃)"
+                dot={<CustomDot />}
+              />
+            </ComposedChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+
+      {/* 第3行: プレイしたゲーム */}
+      <Card className="border border-gray-200 shadow-sm">
+        <CardHeader className="pb-3 bg-gray-50 border-b">
+          <CardTitle className="text-base text-gray-900">プレイしたゲーム</CardTitle>
+        </CardHeader>
+        <CardContent className="pt-4">
+          {gameStats.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8">
+              今月のゲームプレイデータがありません
+            </p>
+          ) : (
+            <div className="flex gap-6 justify-center flex-wrap">
+              {gameStats.map((game) => (
+                <div key={game.gameId} className="text-center relative">
+                  <div className="relative">
+                    <div className="w-16 h-16 rounded-full overflow-hidden border-3 border-gray-200 shadow-sm">
+                      {game.gameImageUrl ? (
+                        <Image
+                          src={game.gameImageUrl}
+                          alt={game.gameName}
+                          width={64}
+                          height={64}
+                          className="object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white font-bold">
+                          {game.gameName.charAt(0)}
+                        </div>
+                      )}
+                    </div>
+                    <Badge className="absolute -top-1 -right-1 bg-blue-500 text-white font-bold text-xs">
+                      {game.playCount}
+                    </Badge>
+                  </div>
+                  <p className="text-xs font-medium mt-2 w-20 text-gray-700 truncate">{game.gameName}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* 第3行: AIコメント */}
       <Card className="border border-blue-200 shadow-sm bg-blue-50">
