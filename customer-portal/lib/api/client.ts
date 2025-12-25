@@ -137,3 +137,48 @@ export function formatWagePhase(wagePhase: {
     ],
   };
 }
+
+/**
+ * 工賃履歴を取得
+ */
+export async function getWageHistory() {
+  return apiRequest<{
+    history: Array<{
+      id: string;
+      year: number;
+      month: number;
+      totalAmount: number;
+      memberCount: number;
+      status: string;
+      paymentDate: string | null;
+    }>;
+  }>('/api/wages/history');
+}
+
+/**
+ * 指定月の利用者別工賃内訳を取得
+ */
+export async function getMemberWages(year: number, month: number) {
+  return apiRequest<{
+    members: Array<{
+      name: string;
+      initials: string | null;
+      amount: number;
+      playCount: number;
+    }>;
+  }>(`/api/wages/members?year=${year}&month=${month}`);
+}
+
+/**
+ * 繰越金額を取得
+ */
+export async function getWageCarryover(year?: number, month?: number) {
+  const params = year && month ? `?year=${year}&month=${month}` : '';
+  return apiRequest<{
+    carryover: {
+      year: number;
+      month: number;
+      amount: number;
+    } | null;
+  }>(`/api/wages/carryover${params}`);
+}

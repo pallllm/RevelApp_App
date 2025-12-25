@@ -14,7 +14,13 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
-import { getFacilityStats, formatWagePhase } from "@/lib/api/client";
+import {
+  getFacilityStats,
+  formatWagePhase,
+  getWageHistory,
+  getMemberWages,
+  getWageCarryover,
+} from "@/lib/api/client";
 
 // Wage phase data - soft, professional colors
 const wagePhases = [
@@ -53,48 +59,23 @@ const wagePhases = [
   },
 ];
 
-const rewardHistory = [
-  {
-    id: 1,
-    month: "2024年12月",
-    amount: 78000,
-    status: "confirmed",
-    paymentDate: "2024-12-25",
-    members: 25,
-  },
-  {
-    id: 2,
-    month: "2024年11月",
-    amount: 76000,
-    status: "paid",
-    paymentDate: "2024-11-25",
-    members: 22,
-  },
-  {
-    id: 3,
-    month: "2024年10月",
-    amount: 74000,
-    status: "paid",
-    paymentDate: "2024-10-25",
-    members: 20,
-  },
-  {
-    id: 4,
-    month: "2024年9月",
-    amount: 72000,
-    status: "paid",
-    paymentDate: "2024-09-25",
-    members: 18,
-  },
-];
+// 工賃履歴とメンバー内訳の型定義
+type WageHistoryItem = {
+  id: string;
+  year: number;
+  month: number;
+  totalAmount: number;
+  memberCount: number;
+  status: string;
+  paymentDate: string | null;
+};
 
-const memberRewards = [
-  { name: "田中 太郎", amount: 3600 },
-  { name: "佐藤 花子", amount: 4160 },
-  { name: "鈴木 一郎", amount: 3040 },
-  { name: "高橋 美咲", amount: 2720 },
-  { name: "渡辺 健太", amount: 2240 },
-];
+type MemberWage = {
+  name: string;
+  initials: string | null;
+  amount: number;
+  playCount: number;
+};
 
 export default function RewardsPage() {
   // API data state
@@ -107,6 +88,9 @@ export default function RewardsPage() {
     phase: string;
     levels: Array<{ level: number; wage: number }>;
   } | null>(null);
+  const [wageHistory, setWageHistory] = useState<WageHistoryItem[]>([]);
+  const [memberWages, setMemberWages] = useState<MemberWage[]>([]);
+  const [carryoverAmount, setCarryoverAmount] = useState<number>(0);
 
   // Fetch data from API
   useEffect(() => {
@@ -115,14 +99,29 @@ export default function RewardsPage() {
         setLoading(true);
         setError(null);
 
+        // 統計情報を取得
         const statsData = await getFacilityStats();
-
         setContinuationMonths(statsData.stats.continuationMonths);
         setTotalWages(statsData.stats.totalWages);
         setPreviousMonthWage(
           statsData.stats.previousMonthWage?.totalAmount || null
         );
         setCurrentWagePhase(formatWagePhase(statsData.stats.wagePhase));
+
+        // 工賃履歴を取得
+        const historyData = await getWageHistory();
+        setWageHistory(historyData.history);
+
+        // 前月の利用者別工賃内訳を取得
+        const now = new Date();
+        const previousMonth = now.getMonth() === 0 ? 12 : now.getMonth();
+        const previousYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+        const memberData = await getMemberWages(previousYear, previousMonth);
+        setMemberWages(memberData.members);
+
+        // 繰越金額を取得
+        const carryoverData = await getWageCarryover();
+        setCarryoverAmount(carryoverData.carryover?.amount || 0);
       } catch (err) {
         console.error('Failed to fetch data:', err);
         setError(err instanceof Error ? err.message : 'データの取得に失敗しました');
@@ -258,7 +257,7 @@ export default function RewardsPage() {
               <Calendar className="h-4 w-4 text-purple-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{formatCurrency(0)}</div>
+              <div className="text-2xl font-bold">{formatCurrency(carryoverAmount)}</div>
               <p className="text-xs text-muted-foreground mt-1">
                 次月に持ち越し
               </p>
@@ -332,54 +331,69 @@ export default function RewardsPage() {
             <CardTitle>工賃履歴</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {rewardHistory.map((record) => (
-                <div
-                  key={record.id}
-                  className="flex items-start justify-between border-b last:border-0 pb-4 last:pb-0"
-                >
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <p className="font-semibold">{record.month}</p>
-                      {record.status === "confirmed" ? (
-                        <Badge variant="warning">確定済み</Badge>
-                      ) : (
-                        <Badge variant="success">支払済み</Badge>
-                      )}
+            {wageHistory.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                工賃履歴がありません
+              </p>
+            ) : (
+              <div className="space-y-4">
+                {wageHistory.map((record) => {
+                  const monthLabel = `${record.year}年${record.month}月`;
+                  const formattedPaymentDate = record.paymentDate
+                    ? new Date(record.paymentDate).toLocaleDateString('ja-JP')
+                    : '未定';
+
+                  return (
+                    <div
+                      key={record.id}
+                      className="flex items-start justify-between border-b last:border-0 pb-4 last:pb-0"
+                    >
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <p className="font-semibold">{monthLabel}</p>
+                          {record.status === "CONFIRMED" ? (
+                            <Badge variant="warning">確定済み</Badge>
+                          ) : record.status === "PAID" ? (
+                            <Badge variant="success">支払済み</Badge>
+                          ) : (
+                            <Badge variant="secondary">計算中</Badge>
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          振込日: {formattedPaymentDate}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          対象: {record.memberCount}名
+                        </p>
+                        <p className="text-lg font-bold mt-2">
+                          {formatCurrency(record.totalAmount)}
+                        </p>
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="gap-1 text-xs h-8"
+                          onClick={() => handleDownloadNotice(monthLabel)}
+                        >
+                          <FileText className="h-3 w-3" />
+                          報酬決定通知書
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="gap-1 text-xs h-8"
+                          onClick={() => handleDownloadInvoice(monthLabel)}
+                        >
+                          <Download className="h-3 w-3" />
+                          請求書
+                        </Button>
+                      </div>
                     </div>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      振込日: {record.paymentDate}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      対象: {record.members}名
-                    </p>
-                    <p className="text-lg font-bold mt-2">
-                      {formatCurrency(record.amount)}
-                    </p>
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="gap-1 text-xs h-8"
-                      onClick={() => handleDownloadNotice(record.month)}
-                    >
-                      <FileText className="h-3 w-3" />
-                      報酬決定通知書
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="gap-1 text-xs h-8"
-                      onClick={() => handleDownloadInvoice(record.month)}
-                    >
-                      <Download className="h-3 w-3" />
-                      請求書
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -389,51 +403,66 @@ export default function RewardsPage() {
             <CardTitle>{getCurrentYearMonth()}分の利用者別内訳</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {memberRewards.map((member, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between border-b last:border-0 pb-4 last:pb-0"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-green-500 to-blue-500 flex items-center justify-center text-white text-sm font-semibold">
-                      {member.name.charAt(0)}
+            {memberWages.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                利用者別の工賃データがありません
+              </p>
+            ) : (
+              <div className="space-y-4">
+                {memberWages.map((member, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between border-b last:border-0 pb-4 last:pb-0"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-full bg-gradient-to-br from-green-500 to-blue-500 flex items-center justify-center text-white text-sm font-semibold">
+                        {member.initials || member.name.charAt(0)}
+                      </div>
+                      <div>
+                        <p className="font-medium">{member.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          プレイ回数: {member.playCount}回
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-medium">{member.name}</p>
+                    <div className="text-right">
+                      <p className="font-bold text-green-600">
+                        {formatCurrency(member.amount)}
+                      </p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-bold text-green-600">
-                      {formatCurrency(member.amount)}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
 
-      {/* Payment Info */}
-      <Card className="border-green-200 bg-green-50/50">
-        <CardContent className="pt-6">
-          <div className="flex items-start gap-4">
-            <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
-            <div>
-              <p className="font-semibold text-green-900">
-                {getCurrentYearMonth()}分の工賃が確定しました
-              </p>
-              <p className="text-sm text-green-700 mt-1">
-                ¥78,000 が 2024年12月25日 に登録口座へ振り込まれます。
-              </p>
-              <p className="text-xs text-green-600 mt-2">
-                振込口座: ○○銀行 ○○支店 普通 1234567
-              </p>
+      {/* Payment Info - 確定済みの工賃がある場合のみ表示 */}
+      {wageHistory.length > 0 && wageHistory[0].status === 'CONFIRMED' && (
+        <Card className="border-green-200 bg-green-50/50">
+          <CardContent className="pt-6">
+            <div className="flex items-start gap-4">
+              <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
+              <div>
+                <p className="font-semibold text-green-900">
+                  {wageHistory[0].year}年{wageHistory[0].month}月分の工賃が確定しました
+                </p>
+                <p className="text-sm text-green-700 mt-1">
+                  {formatCurrency(wageHistory[0].totalAmount)} が{' '}
+                  {wageHistory[0].paymentDate
+                    ? new Date(wageHistory[0].paymentDate).toLocaleDateString('ja-JP')
+                    : '近日中'}
+                  {' '}に登録口座へ振り込まれます。
+                </p>
+                <p className="text-xs text-green-600 mt-2">
+                  振込口座は契約情報ページでご確認いただけます。
+                </p>
+              </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
