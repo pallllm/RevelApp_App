@@ -13,9 +13,11 @@ import {
   Video,
   Gamepad2,
   AlertCircle,
+  Edit,
 } from "lucide-react";
 import { GAMES } from "@/lib/constants";
 import { getFacility, formatPlanType } from "@/lib/api/client";
+import { MemberFormDialog } from "@/components/member-form-dialog";
 
 // プランタイプの定義
 type PlanType = "focus" | "entry" | "flexible";
@@ -24,6 +26,7 @@ type PlanType = "focus" | "entry" | "flexible";
 interface Member {
   id: string;
   name: string;
+  email?: string;
   initials: string;
   role: string;
   startDate: string;
@@ -47,6 +50,10 @@ export default function MembersPage() {
   const [currentPlan, setCurrentPlan] = useState<PlanType>("flexible");
   const [members, setMembers] = useState<Member[]>([]);
   const [facilityGames, setFacilityGames] = useState<FacilityGame[]>([]);
+
+  // Dialog state
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedMember, setSelectedMember] = useState<Member | null>(null);
 
   // Fetch data from API
   useEffect(() => {
@@ -83,6 +90,39 @@ export default function MembersPage() {
 
     fetchData();
   }, []);
+
+  // データ再取得関数
+  const refreshData = async () => {
+    try {
+      const facilityData = await getFacility();
+      const memberUsers = facilityData.facility.members.filter(
+        (m: any) => m.role === 'MEMBER'
+      );
+      setMembers(memberUsers);
+    } catch (err) {
+      console.error('Failed to refresh data:', err);
+    }
+  };
+
+  // ダイアログハンドラー
+  const handleAddMember = () => {
+    setSelectedMember(null);
+    setIsDialogOpen(true);
+  };
+
+  const handleEditMember = (member: Member) => {
+    setSelectedMember(member);
+    setIsDialogOpen(true);
+  };
+
+  const handleCloseDialog = () => {
+    setIsDialogOpen(false);
+    setSelectedMember(null);
+  };
+
+  const handleSuccess = () => {
+    refreshData();
+  };
 
   // メインゲームと予備ゲームを分離
   const facilityMainGames = facilityGames.filter(g => !g.isBackup);
@@ -137,7 +177,10 @@ export default function MembersPage() {
             施設の利用者情報を管理できます
           </p>
         </div>
-        <Button className="gap-2 bg-blue-600 hover:bg-blue-700">
+        <Button
+          className="gap-2 bg-blue-600 hover:bg-blue-700"
+          onClick={handleAddMember}
+        >
           <UserPlus className="h-4 w-4" />
           利用者追加申請
         </Button>
@@ -319,6 +362,16 @@ export default function MembersPage() {
 
                   {/* Right: Actions */}
                   <div className="flex items-center gap-4">
+                    {/* Edit Button */}
+                    <Button
+                      variant="outline"
+                      className="gap-2 border-blue-300 hover:bg-blue-50"
+                      onClick={() => handleEditMember(member)}
+                    >
+                      <Edit className="h-4 w-4" />
+                      編集
+                    </Button>
+
                     {/* Self-monitoring Sheet Button */}
                     <Button
                       variant="outline"
@@ -338,6 +391,14 @@ export default function MembersPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Member Form Dialog */}
+      <MemberFormDialog
+        open={isDialogOpen}
+        onClose={handleCloseDialog}
+        onSuccess={handleSuccess}
+        member={selectedMember}
+      />
     </div>
   );
 }
