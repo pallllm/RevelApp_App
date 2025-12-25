@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,8 +11,10 @@ import {
   Calendar,
   CheckCircle,
   FileText,
+  AlertCircle,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
+import { getFacilityStats, formatWagePhase } from "@/lib/api/client";
 
 // Wage phase data - soft, professional colors
 const wagePhases = [
@@ -94,7 +97,42 @@ const memberRewards = [
 ];
 
 export default function RewardsPage() {
-  const continuationMonths = 7; // 継続月数
+  // API data state
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [continuationMonths, setContinuationMonths] = useState(0);
+  const [totalWages, setTotalWages] = useState(0);
+  const [previousMonthWage, setPreviousMonthWage] = useState<number | null>(null);
+  const [currentWagePhase, setCurrentWagePhase] = useState<{
+    phase: string;
+    levels: Array<{ level: number; wage: number }>;
+  } | null>(null);
+
+  // Fetch data from API
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const statsData = await getFacilityStats();
+
+        setContinuationMonths(statsData.stats.continuationMonths);
+        setTotalWages(statsData.stats.totalWages);
+        setPreviousMonthWage(
+          statsData.stats.previousMonthWage?.totalAmount || null
+        );
+        setCurrentWagePhase(formatWagePhase(statsData.stats.wagePhase));
+      } catch (err) {
+        console.error('Failed to fetch data:', err);
+        setError(err instanceof Error ? err.message : 'データの取得に失敗しました');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchData();
+  }, []);
 
   // Determine current phase
   const getCurrentPhase = () => {
@@ -104,6 +142,18 @@ export default function RewardsPage() {
   };
 
   const currentPhase = getCurrentPhase();
+
+  // Merge API wage data with hardcoded phase structure
+  const displayWagePhases = wagePhases.map((phase, index) => {
+    if (index === currentPhase && currentWagePhase) {
+      return {
+        ...phase,
+        phase: currentWagePhase.phase,
+        levels: currentWagePhase.levels,
+      };
+    }
+    return phase;
+  });
 
   // 前月の年月を取得
   const getCurrentYearMonth = () => {
@@ -121,6 +171,44 @@ export default function RewardsPage() {
     // TODO: 請求書のダウンロード処理
     console.log(`請求書をダウンロード: ${month}`);
   };
+
+  // ローディング中の表示
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold tracking-tight text-gray-900">工賃管理</h1>
+          <p className="text-gray-600 mt-1">月次工賃の確認と履歴を管理できます</p>
+        </div>
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+      </div>
+    );
+  }
+
+  // エラー時の表示
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold tracking-tight text-gray-900">工賃管理</h1>
+          <p className="text-gray-600 mt-1">月次工賃の確認と履歴を管理できます</p>
+        </div>
+        <Card className="border-red-200 bg-red-50">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3 text-red-700">
+              <AlertCircle className="h-5 w-5" />
+              <div>
+                <p className="font-semibold">データの読み込みに失敗しました</p>
+                <p className="text-sm mt-1">{error}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -144,9 +232,11 @@ export default function RewardsPage() {
               <DollarSign className="h-4 w-4 text-green-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{formatCurrency(78000)}</div>
+              <div className="text-2xl font-bold">
+                {previousMonthWage !== null ? formatCurrency(previousMonthWage) : 'データなし'}
+              </div>
               <p className="text-xs text-muted-foreground mt-1">
-                確定済み・振込予定日: 12/25
+                {previousMonthWage !== null ? '確定済み・振込予定日: 12/25' : '前月のデータがありません'}
               </p>
             </CardContent>
           </Card>
@@ -156,7 +246,7 @@ export default function RewardsPage() {
               <TrendingUp className="h-4 w-4 text-blue-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{formatCurrency(433000)}</div>
+              <div className="text-2xl font-bold">{formatCurrency(totalWages)}</div>
               <p className="text-xs text-muted-foreground mt-1">
                 サービス開始から
               </p>
@@ -168,7 +258,7 @@ export default function RewardsPage() {
               <Calendar className="h-4 w-4 text-purple-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{formatCurrency(5000)}</div>
+              <div className="text-2xl font-bold">{formatCurrency(0)}</div>
               <p className="text-xs text-muted-foreground mt-1">
                 次月に持ち越し
               </p>
@@ -191,13 +281,13 @@ export default function RewardsPage() {
                 <p className="text-sm text-muted-foreground mb-1">現在の継続月数</p>
                 <p className="text-4xl font-bold text-primary">{continuationMonths}ヶ月</p>
                 <p className="text-sm text-muted-foreground mt-2">
-                  {wagePhases[currentPhase].phase} フェーズ
+                  {displayWagePhases[currentPhase].phase} フェーズ
                 </p>
               </div>
 
               {/* Phase visualization */}
               <div className="space-y-3">
-                {wagePhases.map((phase, index) => (
+                {displayWagePhases.map((phase, index) => (
                   <div key={index} className="relative">
                     <div
                       className={`p-4 rounded-xl bg-gradient-to-r ${phase.color} ${
