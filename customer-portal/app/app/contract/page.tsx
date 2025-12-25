@@ -89,8 +89,26 @@ export default function ContractPage() {
   }, []);
 
   // メインゲームと予備ゲームを分離
-  const mainGames = games.filter(g => !g.isBackup);
-  const backupGames = games.filter(g => g.isBackup);
+  const allMainGames = games.filter(g => !g.isBackup);
+  const allBackupGames = games.filter(g => g.isBackup);
+
+  // プランタイプに応じてゲーム数を制限
+  const getGameLimits = () => {
+    switch (planType) {
+      case "FLEXIBLE":
+        return { main: 5, backup: 1 };
+      case "ENTRY":
+        return { main: 3, backup: 1 };
+      case "FOCUS":
+        return { main: 2, backup: 1 }; // 利用者ごと
+      default:
+        return { main: 5, backup: 1 };
+    }
+  };
+
+  const limits = getGameLimits();
+  const mainGames = allMainGames.slice(0, limits.main);
+  const backupGames = allBackupGames.slice(0, limits.backup);
   return (
     <div className="space-y-6">
       {/* Page Header */}
