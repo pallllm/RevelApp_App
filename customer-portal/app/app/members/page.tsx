@@ -13,11 +13,9 @@ import {
   Video,
   Gamepad2,
   AlertCircle,
-  Edit,
 } from "lucide-react";
 import { GAMES } from "@/lib/constants";
 import { getFacility, formatPlanType } from "@/lib/api/client";
-import { MemberFormDialog } from "@/components/member-form-dialog";
 
 // プランタイプの定義
 type PlanType = "focus" | "entry" | "flexible";
@@ -50,10 +48,6 @@ export default function MembersPage() {
   const [currentPlan, setCurrentPlan] = useState<PlanType>("flexible");
   const [members, setMembers] = useState<Member[]>([]);
   const [facilityGames, setFacilityGames] = useState<FacilityGame[]>([]);
-
-  // Dialog state
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [selectedMember, setSelectedMember] = useState<Member | null>(null);
 
   // Fetch data from API
   useEffect(() => {
@@ -90,27 +84,6 @@ export default function MembersPage() {
 
     fetchData();
   }, []);
-
-  // ダイアログハンドラー
-  const handleAddMember = () => {
-    setSelectedMember(null);
-    setIsDialogOpen(true);
-  };
-
-  const handleEditMember = (member: Member) => {
-    setSelectedMember(member);
-    setIsDialogOpen(true);
-  };
-
-  const handleCloseDialog = () => {
-    setIsDialogOpen(false);
-    setSelectedMember(null);
-  };
-
-  const handleSuccess = () => {
-    // 申請方式なので、データの再取得は不要
-    // 申請一覧ページで確認可能
-  };
 
   // メインゲームと予備ゲームを分離
   const facilityMainGames = facilityGames.filter(g => !g.isBackup);
@@ -167,10 +140,10 @@ export default function MembersPage() {
         </div>
         <Button
           className="gap-2 bg-blue-600 hover:bg-blue-700"
-          onClick={handleAddMember}
+          onClick={() => window.location.href = '/app/requests'}
         >
           <UserPlus className="h-4 w-4" />
-          利用者追加申請
+          利用者変更申請
         </Button>
       </div>
 
@@ -350,16 +323,6 @@ export default function MembersPage() {
 
                   {/* Right: Actions */}
                   <div className="flex items-center gap-4">
-                    {/* Edit Button */}
-                    <Button
-                      variant="outline"
-                      className="gap-2 border-blue-300 hover:bg-blue-50"
-                      onClick={() => handleEditMember(member)}
-                    >
-                      <Edit className="h-4 w-4" />
-                      編集
-                    </Button>
-
                     {/* Self-monitoring Sheet Button */}
                     <Button
                       variant="outline"
@@ -379,14 +342,6 @@ export default function MembersPage() {
           )}
         </CardContent>
       </Card>
-
-      {/* Member Form Dialog */}
-      <MemberFormDialog
-        open={isDialogOpen}
-        onClose={handleCloseDialog}
-        onSuccess={handleSuccess}
-        member={selectedMember}
-      />
     </div>
   );
 }
