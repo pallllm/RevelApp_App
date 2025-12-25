@@ -91,19 +91,6 @@ export default function MembersPage() {
     fetchData();
   }, []);
 
-  // データ再取得関数
-  const refreshData = async () => {
-    try {
-      const facilityData = await getFacility();
-      const memberUsers = facilityData.facility.members.filter(
-        (m: any) => m.role === 'MEMBER'
-      );
-      setMembers(memberUsers);
-    } catch (err) {
-      console.error('Failed to refresh data:', err);
-    }
-  };
-
   // ダイアログハンドラー
   const handleAddMember = () => {
     setSelectedMember(null);
@@ -121,7 +108,8 @@ export default function MembersPage() {
   };
 
   const handleSuccess = () => {
-    refreshData();
+    // 申請方式なので、データの再取得は不要
+    // 申請一覧ページで確認可能
   };
 
   // メインゲームと予備ゲームを分離

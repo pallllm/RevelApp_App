@@ -65,28 +65,40 @@ export function MemberFormDialog({ open, onClose, onSuccess, member }: MemberFor
     setLoading(true);
 
     try {
-      const url = isEditing ? `/api/members/${member.id}` : '/api/members';
-      const method = isEditing ? 'PUT' : 'POST';
+      // 変更申請として送信
+      const requestType = isEditing ? 'member_edit' : 'member_add';
+      const requestData = isEditing
+        ? { memberId: member.id, ...formData }
+        : formData;
 
-      const response = await fetch(url, {
-        method,
+      const response = await fetch('/api/change-requests', {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          requestType,
+          requestData,
+          notes: isEditing
+            ? `利用者情報の変更申請: ${formData.name}`
+            : `新規利用者の追加申請: ${formData.name}`,
+        }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || '保存に失敗しました');
+        throw new Error(errorData.error || '申請の送信に失敗しました');
       }
 
       // 成功
       onSuccess();
       onClose();
+
+      // 成功メッセージを表示（後でtoast通知に置き換え可能）
+      alert(isEditing ? '変更申請を送信しました。承認をお待ちください。' : '追加申請を送信しました。承認をお待ちください。');
     } catch (err) {
-      console.error('Failed to save member:', err);
-      setError(err instanceof Error ? err.message : '保存に失敗しました');
+      console.error('Failed to submit change request:', err);
+      setError(err instanceof Error ? err.message : '申請の送信に失敗しました');
     } finally {
       setLoading(false);
     }
@@ -199,7 +211,7 @@ export function MemberFormDialog({ open, onClose, onSuccess, member }: MemberFor
             disabled={loading}
             className="bg-blue-600 hover:bg-blue-700"
           >
-            {loading ? "保存中..." : isEditing ? "更新" : "追加"}
+            {loading ? "送信中..." : isEditing ? "変更申請を送信" : "追加申請を送信"}
           </Button>
         </DialogFooter>
       </form>

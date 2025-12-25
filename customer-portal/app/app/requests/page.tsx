@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,6 +22,9 @@ import {
   FileText,
   Send,
   Clock,
+  AlertCircle,
+  CheckCircle,
+  XCircle,
 } from "lucide-react";
 import {
   PlanChangeForm,
@@ -68,30 +71,39 @@ const REQUEST_TYPES = {
   ],
 };
 
-// 申請履歴（サンプル）
-const requestHistory = [
-  {
-    id: 1,
-    type: '利用者追加',
-    date: '2024-12-20',
-    status: 'approved',
-    description: '新規利用者3名の追加',
-  },
-  {
-    id: 2,
-    type: 'ゲーム変更',
-    date: '2024-12-15',
-    status: 'pending',
-    description: 'フォーカスゲームの追加',
-  },
-  {
-    id: 3,
-    type: '振込口座変更',
-    date: '2024-12-10',
-    status: 'approved',
-    description: '工賃振込口座の変更',
-  },
-];
+// 申請タイプの日本語表示
+const REQUEST_TYPE_LABELS: Record<string, string> = {
+  member_add: "利用者追加",
+  member_edit: "利用者情報変更",
+  member_delete: "利用者削除",
+  facility_info: "事業所情報変更",
+  plan_change: "プラン変更",
+  game_change: "ゲーム変更",
+  user_add: "利用者追加",
+  user_remove: "利用者削除",
+  pc_add: "PC追加",
+  pc_change: "PC変更",
+  payment_change: "支払い方法変更",
+  wage_account: "工賃振込口座変更",
+  other: "その他のお問い合わせ",
+};
+
+// ステータスのマッピング
+const STATUS_CONFIG = {
+  PENDING: { label: "確認中", variant: "warning" as const, icon: Clock },
+  APPROVED: { label: "承認済み", variant: "success" as const, icon: CheckCircle },
+  REJECTED: { label: "却下", variant: "destructive" as const, icon: XCircle },
+};
+
+interface ChangeRequest {
+  id: string;
+  requestType: string;
+  status: string;
+  requestData: any;
+  notes: string | null;
+  submittedAt: string;
+  processedAt: string | null;
+}
 
 export default function RequestsPage() {
   // 本番環境ではAPIから取得
@@ -100,6 +112,37 @@ export default function RequestsPage() {
 
   const [step, setStep] = useState<'request' | 'form'>('request');
   const [selectedRequest, setSelectedRequest] = useState<string | null>(null);
+
+  // 申請履歴のstate
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [requests, setRequests] = useState<ChangeRequest[]>([]);
+
+  // 申請履歴を取得
+  useEffect(() => {
+    async function fetchRequests() {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const response = await fetch('/api/change-requests');
+
+        if (!response.ok) {
+          throw new Error('申請一覧の取得に失敗しました');
+        }
+
+        const data = await response.json();
+        setRequests(data.changeRequests);
+      } catch (err) {
+        console.error('Failed to fetch requests:', err);
+        setError(err instanceof Error ? err.message : '申請一覧の取得に失敗しました');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchRequests();
+  }, []);
 
   const handleRequestSelect = (requestId: string) => {
     setSelectedRequest(requestId);
@@ -178,36 +221,64 @@ export default function RequestsPage() {
             <CardTitle>申請履歴</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {requestHistory.map((request) => (
-                <div
-                  key={request.id}
-                  className="flex items-center justify-between border-b last:border-0 pb-4 last:pb-0"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center">
-                      <FileText className="h-5 w-5 text-white" />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <p className="font-semibold">{request.type}</p>
-                        {request.status === 'approved' ? (
-                          <Badge variant="success">承認済み</Badge>
-                        ) : (
-                          <Badge variant="warning">確認中</Badge>
-                        )}
+            {loading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              </div>
+            ) : error ? (
+              <div className="flex items-center gap-3 text-red-700 py-4">
+                <AlertCircle className="h-5 w-5" />
+                <p className="text-sm">{error}</p>
+              </div>
+            ) : requests.length === 0 ? (
+              <div className="text-center py-8">
+                <FileText className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                <p className="text-gray-500">申請履歴がありません</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {requests.map((request) => {
+                  const statusConfig = STATUS_CONFIG[request.status as keyof typeof STATUS_CONFIG];
+                  const StatusIcon = statusConfig?.icon || Clock;
+
+                  return (
+                    <div
+                      key={request.id}
+                      className="flex items-center justify-between border-b last:border-0 pb-4 last:pb-0"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center">
+                          <FileText className="h-5 w-5 text-white" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <p className="font-semibold">
+                              {REQUEST_TYPE_LABELS[request.requestType] || request.requestType}
+                            </p>
+                            <Badge variant={statusConfig?.variant || "warning"}>
+                              <StatusIcon className="h-3 w-3 mr-1" />
+                              {statusConfig?.label || request.status}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {request.notes || (
+                              request.requestType === 'member_add' ? `新規利用者: ${request.requestData.name}` :
+                              request.requestType === 'member_edit' ? `利用者情報変更: ${request.requestData.name}` :
+                              '詳細を確認してください'
+                            )}
+                          </p>
+                        </div>
                       </div>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {request.description}
-                      </p>
+                      <div className="text-right">
+                        <p className="text-sm text-muted-foreground">
+                          {new Date(request.submittedAt).toLocaleDateString('ja-JP')}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm text-muted-foreground">{request.date}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </CardContent>
         </Card>
         </>
