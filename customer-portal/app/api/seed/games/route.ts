@@ -100,7 +100,23 @@ export async function POST() {
 
   try {
     const results = [];
+    const DEV_USER_ID = 'test-user-staff-001';
 
+    // 開発用ユーザーを取得してfacilityIdを取得
+    const user = await prisma.user.findUnique({
+      where: { id: DEV_USER_ID },
+    });
+
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Development user not found' },
+        { status: 400 }
+      );
+    }
+
+    const facilityId = user.facilityId;
+
+    // ゲームデータを挿入
     for (const game of games) {
       const result = await prisma.game.upsert({
         where: { id: game.id },
@@ -110,8 +126,28 @@ export async function POST() {
       results.push(result);
     }
 
+    // FacilityGameのリレーションを作成（全ゲームを事業所に割り当て）
+    for (const game of games) {
+      await prisma.facilityGame.upsert({
+        where: {
+          facilityId_gameId: {
+            facilityId: facilityId,
+            gameId: game.id,
+          },
+        },
+        update: {
+          isBackup: game.level >= 3, // レベル3以上はバックアップ扱い
+        },
+        create: {
+          facilityId: facilityId,
+          gameId: game.id,
+          isBackup: game.level >= 3,
+        },
+      });
+    }
+
     return NextResponse.json({
-      message: `Successfully seeded ${results.length} games`,
+      message: `Successfully seeded ${results.length} games and assigned to facility`,
       games: results.map(g => ({ id: g.id, name: g.name, level: g.level })),
     });
   } catch (error) {

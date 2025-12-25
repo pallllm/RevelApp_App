@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,9 +12,54 @@ import {
   CreditCard,
   Edit,
   CheckCircle,
+  ExternalLink,
+  Loader2,
 } from "lucide-react";
+import { getFacility } from "@/lib/api/client";
+
+interface Game {
+  id: string;
+  name: string;
+  level: number;
+  imageUrl: string | null;
+  manualUrl: string | null;
+  description: string | null;
+  isBackup: boolean;
+}
 
 export default function ContractPage() {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [games, setGames] = useState<Game[]>([]);
+
+  useEffect(() => {
+    async function fetchGames() {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await getFacility();
+
+        // facilityGamesからゲーム情報を取得
+        const facilityGames = data.facility.games.map((fg: any) => ({
+          id: fg.id,
+          name: fg.name,
+          level: fg.level,
+          imageUrl: fg.imageUrl,
+          manualUrl: fg.manualUrl,
+          description: fg.description,
+          isBackup: fg.isBackup,
+        }));
+
+        setGames(facilityGames);
+      } catch (err) {
+        console.error('Failed to fetch games:', err);
+        setError(err instanceof Error ? err.message : 'ゲーム情報の取得に失敗しました');
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchGames();
+  }, []);
   return (
     <div className="space-y-6">
       {/* Page Header */}
@@ -151,58 +197,82 @@ export default function ContractPage() {
               <Gamepad2 className="h-5 w-5 text-blue-600" />
               導入ゲーム
             </CardTitle>
-            <Button variant="outline" size="sm" className="gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              onClick={() => window.location.href = '/app/requests'}
+            >
               <Edit className="h-3 w-3" />
               変更申請
             </Button>
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 md:grid-cols-3">
-            {[
-              {
-                name: "フォーカス",
-                description: "集中力トレーニング",
-                status: "active",
-              },
-              {
-                name: "メモリー",
-                description: "記憶力向上",
-                status: "active",
-              },
-              {
-                name: "パズル",
-                description: "問題解決能力",
-                status: "active",
-              },
-              {
-                name: "リズム",
-                description: "タイミング訓練",
-                status: "active",
-              },
-              {
-                name: "カラーマッチ",
-                description: "認知力向上",
-                status: "active",
-              },
-            ].map((game, index) => (
-              <div
-                key={index}
-                className="border rounded-lg p-4 hover:bg-accent/50 transition-colors"
-              >
-                <div className="flex items-start justify-between mb-2">
-                  <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center">
-                    <Gamepad2 className="h-5 w-5 text-white" />
+          {loading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : error ? (
+            <div className="text-center py-8 text-red-600">
+              {error}
+            </div>
+          ) : games.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              登録されているゲームがありません
+            </div>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-3">
+              {games.map((game) => (
+                <div
+                  key={game.id}
+                  className="border rounded-lg p-4 hover:bg-accent/50 transition-colors"
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    {game.imageUrl ? (
+                      <img
+                        src={game.imageUrl}
+                        alt={game.name}
+                        className="h-10 w-10 rounded-lg object-cover"
+                      />
+                    ) : (
+                      <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center">
+                        <Gamepad2 className="h-5 w-5 text-white" />
+                      </div>
+                    )}
+                    <div className="flex flex-col items-end gap-1">
+                      <Badge variant="success">有効</Badge>
+                      {game.isBackup && (
+                        <Badge variant="outline" className="text-xs">
+                          バックアップ
+                        </Badge>
+                      )}
+                    </div>
                   </div>
-                  <Badge variant="success">有効</Badge>
+                  <div className="flex items-center gap-2 mb-1">
+                    <p className="font-semibold">{game.name}</p>
+                    <Badge variant="outline" className="text-xs">
+                      Lv.{game.level}
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    {game.description || 'レベル' + game.level + 'のゲーム'}
+                  </p>
+                  {game.manualUrl && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="gap-2 text-xs h-7 px-2"
+                      onClick={() => window.open(game.manualUrl!, '_blank')}
+                    >
+                      マニュアル
+                      <ExternalLink className="h-3 w-3" />
+                    </Button>
+                  )}
                 </div>
-                <p className="font-semibold">{game.name}</p>
-                <p className="text-sm text-muted-foreground">
-                  {game.description}
-                </p>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 
