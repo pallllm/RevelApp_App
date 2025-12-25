@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -28,8 +28,10 @@ import {
   TrendingDown,
   Moon,
   Activity,
+  AlertCircle,
 } from "lucide-react";
 import { GAMES } from "@/lib/constants";
+import { getFacility } from "@/lib/api/client";
 
 // Sample data - 1ヶ月分のデータ
 const dailyHealthData = Array.from({ length: 31 }, (_, i) => {
@@ -111,12 +113,13 @@ const getWeatherIcon = (weather: string, small = false) => {
   }
 };
 
-// 利用者リスト
-const users = [
-  { id: "1", name: "HATARAKU T.O." },
-  { id: "2", name: "山田 太郎" },
-  { id: "3", name: "佐藤 花子" },
-];
+// APIから取得したユーザーの型定義
+interface User {
+  id: string;
+  name: string;
+  initials: string;
+  role: string;
+}
 
 // カスタムドット（気温の折れ線グラフ用 - 天気アイコンと気圧変化アイコンを表示）
 const CustomDot = (props: any) => {
@@ -146,9 +149,44 @@ const CustomDot = (props: any) => {
 };
 
 export default function HealthGraphPage() {
+  // API data state
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [users, setUsers] = useState<User[]>([]);
+
   const [selectedYear, setSelectedYear] = useState<number>(2024);
   const [selectedMonth, setSelectedMonth] = useState<number>(12);
-  const [selectedUserId, setSelectedUserId] = useState<string>("1");
+  const [selectedUserId, setSelectedUserId] = useState<string>("");
+
+  // Fetch users from API
+  useEffect(() => {
+    async function fetchUsers() {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const facilityData = await getFacility();
+
+        // 利用者データを設定（MEMBERロールのみ）
+        const memberUsers = facilityData.facility.members.filter(
+          (m: any) => m.role === 'MEMBER'
+        );
+        setUsers(memberUsers);
+
+        // 最初のユーザーをデフォルト選択
+        if (memberUsers.length > 0 && !selectedUserId) {
+          setSelectedUserId(memberUsers[0].id);
+        }
+      } catch (err) {
+        console.error('Failed to fetch users:', err);
+        setError(err instanceof Error ? err.message : 'データの取得に失敗しました');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchUsers();
+  }, []);
 
   // カレンダー生成
   const generateCalendarDays = () => {
@@ -175,6 +213,44 @@ export default function HealthGraphPage() {
     today.getFullYear() === selectedYear && today.getMonth() + 1 === selectedMonth;
 
   const selectedUser = users.find((u) => u.id === selectedUserId);
+
+  // ローディング中の表示
+  if (loading) {
+    return (
+      <div className="max-w-[594mm] mx-auto bg-white p-8 space-y-6">
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold tracking-tight text-gray-900">体調・行動ダッシュボード</h1>
+          <p className="text-gray-600 mt-1">日々の体調変化とゲームプレイ記録を確認できます</p>
+        </div>
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+      </div>
+    );
+  }
+
+  // エラー時の表示
+  if (error) {
+    return (
+      <div className="max-w-[594mm] mx-auto bg-white p-8 space-y-6">
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold tracking-tight text-gray-900">体調・行動ダッシュボード</h1>
+          <p className="text-gray-600 mt-1">日々の体調変化とゲームプレイ記録を確認できます</p>
+        </div>
+        <Card className="border-red-200 bg-red-50">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3 text-red-700">
+              <AlertCircle className="h-5 w-5" />
+              <div>
+                <p className="font-semibold">データの読み込みに失敗しました</p>
+                <p className="text-sm mt-1">{error}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-[594mm] mx-auto bg-white p-8 space-y-6">
