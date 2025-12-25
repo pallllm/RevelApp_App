@@ -149,6 +149,19 @@ export default function HomePage() {
 
   const currentPhase = getCurrentPhase();
 
+  // Merge API wage data with hardcoded phase structure
+  const displayWagePhases = wagePhases.map((phase, index) => {
+    if (index === currentPhase && currentWagePhase) {
+      // Replace current phase levels with API data
+      return {
+        ...phase,
+        phase: currentWagePhase.phase,
+        levels: currentWagePhase.levels,
+      };
+    }
+    return phase;
+  });
+
   // Calendar navigation
   const handlePreviousMonth = () => {
     if (selectedMonth === 1) {
@@ -386,13 +399,13 @@ export default function HomePage() {
                 <p className="text-sm text-muted-foreground mb-1">現在の継続月数</p>
                 <p className="text-4xl font-bold text-primary">{continuationMonths}ヶ月</p>
                 <p className="text-sm text-muted-foreground mt-2">
-                  {wagePhases[currentPhase].phase} フェーズ
+                  {displayWagePhases[currentPhase].phase} フェーズ
                 </p>
               </div>
 
               {/* Phase visualization */}
               <div className="space-y-3">
-                {wagePhases.map((phase, index) => (
+                {displayWagePhases.map((phase, index) => (
                   <div key={index} className="relative">
                     <div
                       className={`p-4 rounded-xl bg-gradient-to-r ${phase.color} ${
