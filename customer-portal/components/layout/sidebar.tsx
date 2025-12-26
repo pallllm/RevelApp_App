@@ -10,7 +10,6 @@ import {
   DollarSign,
   FileText,
   LifeBuoy,
-  Settings,
   LogOut,
 } from "lucide-react";
 
@@ -97,15 +96,10 @@ export function Sidebar() {
             </p>
           </div>
         </div>
-        <div className="flex gap-2">
-          <button className="flex-1 flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent transition-colors">
-            <Settings className="h-4 w-4" />
-            設定
-          </button>
-          <button className="flex items-center justify-center rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent transition-colors">
-            <LogOut className="h-4 w-4" />
-          </button>
-        </div>
+        <button className="w-full flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent transition-colors">
+          <LogOut className="h-4 w-4" />
+          <span>ログアウト</span>
+        </button>
       </div>
     </div>
   );

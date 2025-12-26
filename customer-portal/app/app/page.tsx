@@ -95,8 +95,9 @@ const wagePhases = [
 
 export default function HomePage() {
   const [expandedAnnouncement, setExpandedAnnouncement] = useState<number | null>(null);
-  const [selectedYear, setSelectedYear] = useState<number>(2024);
-  const [selectedMonth, setSelectedMonth] = useState<number>(12);
+  const now = new Date();
+  const [selectedYear, setSelectedYear] = useState<number>(now.getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState<number>(now.getMonth() + 1);
 
   // API data state
   const [loading, setLoading] = useState(true);
