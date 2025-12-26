@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { fetchWeatherData } from '@/lib/services/weather';
 
 /**
  * POST /api/seed/health-data
@@ -46,10 +47,39 @@ export async function POST() {
       );
     }
 
+    // 天気データを取得（施設の緯度経度が設定されている場合）
+    const now = new Date();
+    const startDate = new Date(now);
+    startDate.setDate(startDate.getDate() - 30);
+
+    let weatherDataMap: Map<string, { temperature: number; weather: string; pressure: number; hasPressureChange: boolean }> = new Map();
+
+    if (testUser.facility.latitude && testUser.facility.longitude) {
+      try {
+        const weatherData = await fetchWeatherData(
+          testUser.facility.latitude,
+          testUser.facility.longitude,
+          startDate.toISOString().split('T')[0],
+          now.toISOString().split('T')[0]
+        );
+
+        // 日付をキーにしたマップを作成
+        weatherData.forEach(data => {
+          weatherDataMap.set(data.date, {
+            temperature: data.temperature,
+            weather: data.weather,
+            pressure: data.pressure,
+            hasPressureChange: data.hasPressureChange,
+          });
+        });
+      } catch (error) {
+        console.warn('Failed to fetch weather data, using random data:', error);
+      }
+    }
+
     // 過去30日分の体調記録を作成
     const healthRecords = [];
     const gamePlayRecords = [];
-    const now = new Date();
 
     for (let i = 0; i < 30; i++) {
       const date = new Date(now);
@@ -60,10 +90,15 @@ export async function POST() {
       if (Math.random() > 0.3) {
         const fatigueLevel = Math.floor(Math.random() * 40) + 30; // 30-70
         const sleepHours = parseFloat((Math.random() * 3 + 5).toFixed(1)); // 5.0-8.0
-        const temperature = parseFloat((Math.random() * 10 + 15).toFixed(1)); // 15-25
-        const weathers = ['sunny', 'cloudy', 'rainy', 'snow'];
-        const weather = weathers[Math.floor(Math.random() * weathers.length)];
-        const hasPressureChange = Math.random() > 0.8; // 20%の確率
+
+        // 日付をキーにして実際の天気データを取得
+        const dateKey = date.toISOString().split('T')[0];
+        const realWeatherData = weatherDataMap.get(dateKey);
+
+        // 実際の天気データがあれば使用、なければランダム生成
+        const temperature = realWeatherData?.temperature ?? parseFloat((Math.random() * 10 + 15).toFixed(1));
+        const weather = realWeatherData?.weather ?? (['sunny', 'cloudy', 'rainy', 'snow'][Math.floor(Math.random() * 4)]);
+        const hasPressureChange = realWeatherData?.hasPressureChange ?? (Math.random() > 0.8);
 
         const achievements = [
           'ゲームを3回クリアできた',
@@ -154,6 +189,8 @@ export async function POST() {
       message: 'Health data seeded successfully',
       healthRecordsCount: healthRecords.length,
       gamePlayRecordsCount: gamePlayRecords.length,
+      weatherDataUsed: weatherDataMap.size > 0,
+      weatherDataCount: weatherDataMap.size,
     });
   } catch (error) {
     console.error('Seed error:', error);

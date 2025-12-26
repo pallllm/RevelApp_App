@@ -21,6 +21,8 @@ model Facility {
   address           String?
   phone             String?
   email             String?
+  latitude          Float?   // 緯度（天気データ取得用）
+  longitude         Float?   // 経度（天気データ取得用）
   bankName          String?
   bankBranch        String?
   bankAccountType   BankAccountType?
