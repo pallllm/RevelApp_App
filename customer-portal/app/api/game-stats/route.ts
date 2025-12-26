@@ -85,10 +85,14 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    // 累計プレイ回数
+    // 累計プレイ回数（選択した月まで）
+    const cumulativeEndDate = new Date(year, month, 0, 23, 59, 59);
     const totalAllTimePlayCount = await prisma.gamePlayRecord.count({
       where: {
         userId,
+        playedAt: {
+          lte: cumulativeEndDate,
+        },
       },
     });
 
