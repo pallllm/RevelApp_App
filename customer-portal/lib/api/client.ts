@@ -222,3 +222,21 @@ export async function getGameStats(userId: string, year: number, month: number) 
     playCountDifference: number;
   }>(`/api/game-stats?userId=${userId}&year=${year}&month=${month}`);
 }
+
+/**
+ * 通知を取得
+ */
+export async function getNotifications(facilityId: string) {
+  return apiRequest<{
+    notifications: Array<{
+      id: string;
+      type: 'info' | 'success' | 'warning' | 'error';
+      title: string;
+      message: string;
+      timestamp: string;
+      read: boolean;
+      link?: string;
+    }>;
+    unreadCount: number;
+  }>(`/api/notifications?facilityId=${facilityId}`);
+}
