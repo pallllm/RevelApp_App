@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
       },
       take: 10,
       include: {
-        user: {
+        requester: {
           select: {
             name: true,
           },
@@ -46,15 +46,15 @@ export async function GET(request: NextRequest) {
 
       switch (request.status) {
         case 'PENDING':
-          message = `${request.user.name}さんの変更申請が提出されました`;
+          message = `${request.requester.name}さんの変更申請が提出されました`;
           type = 'info';
           break;
         case 'APPROVED':
-          message = `${request.user.name}さんの変更申請が承認されました`;
+          message = `${request.requester.name}さんの変更申請が承認されました`;
           type = 'success';
           break;
         case 'REJECTED':
-          message = `${request.user.name}さんの変更申請が却下されました`;
+          message = `${request.requester.name}さんの変更申請が却下されました`;
           type = 'warning';
           break;
       }
