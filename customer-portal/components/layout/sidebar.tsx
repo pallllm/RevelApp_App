@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/lib/contexts/auth-context";
 import {
   LayoutDashboard,
   Users,
@@ -48,6 +49,7 @@ const navigation = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { user, logout } = useAuth();
 
   return (
     <div className="flex h-full w-64 flex-col bg-white border-r">
@@ -87,16 +89,19 @@ export function Sidebar() {
       <div className="border-t p-4">
         <div className="flex items-center gap-3 mb-3">
           <div className="h-10 w-10 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white font-semibold">
-            施
+            {user?.facility.name.charAt(0) || "施"}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate">施設名サンプル</p>
+            <p className="text-sm font-medium truncate">{user?.facility.name || "施設名"}</p>
             <p className="text-xs text-muted-foreground truncate">
-              担当者様
+              {user?.name || "ユーザー"}
             </p>
           </div>
         </div>
-        <button className="w-full flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent transition-colors">
+        <button
+          onClick={logout}
+          className="w-full flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent transition-colors"
+        >
           <LogOut className="h-4 w-4" />
           <span>ログアウト</span>
         </button>
