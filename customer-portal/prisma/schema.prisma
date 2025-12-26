@@ -46,6 +46,7 @@ model User {
   wordpressUserId    Int?       @unique // WordPress User ID
   role               UserRole
   email              String     @unique
+  password           String?    // ハッシュ化されたパスワード（独自認証用）
   name               String
   initials           String?
   status             UserStatus @default(ACTIVE)

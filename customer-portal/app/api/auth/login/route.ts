@@ -1,77 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 
 /**
  * POST /api/auth/login
- * WordPress JWTでログイン
+ * 独自認証でログイン（メールアドレス + パスワード）
  */
 export async function POST(request: NextRequest) {
   try {
-    const { username, password } = await request.json();
+    const { email, password } = await request.json();
 
-    if (!username || !password) {
+    if (!email || !password) {
       return NextResponse.json(
-        { error: 'ユーザー名とパスワードは必須です' },
+        { error: 'メールアドレスとパスワードは必須です' },
         { status: 400 }
       );
     }
 
-    // WordPress JWT認証エンドポイントURL
-    const wordpressApiUrl = process.env.WORDPRESS_API_URL || process.env.NEXT_PUBLIC_WORDPRESS_URL;
-
-    if (!wordpressApiUrl) {
-      console.error('WORDPRESS_API_URL or NEXT_PUBLIC_WORDPRESS_URL is not configured');
-      return NextResponse.json(
-        { error: 'サーバー設定エラー。管理者にお問い合わせください。' },
-        { status: 500 }
-      );
-    }
-
-    // WordPress JWT認証エンドポイントにログインリクエストを送信
-    const jwtEndpoint = `${wordpressApiUrl}/wp-json/jwt-auth/v1/token`;
-
-    console.log(`Attempting WordPress login at: ${jwtEndpoint}`);
-
-    const wordpressResponse = await fetch(jwtEndpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        username,
-        password,
-      }),
-    });
-
-    if (!wordpressResponse.ok) {
-      const errorData = await wordpressResponse.json().catch(() => ({}));
-      console.error('WordPress authentication failed:', errorData);
-
-      return NextResponse.json(
-        { error: errorData.message || 'ユーザー名またはパスワードが正しくありません' },
-        { status: 401 }
-      );
-    }
-
-    const wordpressData = await wordpressResponse.json();
-
-    // WordPressから返されたトークンとユーザー情報
-    const { token, user_email, user_nicename, user_display_name } = wordpressData;
-
-    if (!token) {
-      console.error('No token received from WordPress');
-      return NextResponse.json(
-        { error: 'トークンの取得に失敗しました' },
-        { status: 500 }
-      );
-    }
-
-    // データベースからユーザー情報を取得（WordPress IDでマッチング）
-    // WordPressから返されるユーザーIDを使用する場合は、wordpressDataにIDが含まれている必要があります
-    const user = await prisma.user.findFirst({
+    // データベースからユーザー情報を取得
+    const user = await prisma.user.findUnique({
       where: {
-        email: user_email,
-        status: 'ACTIVE',
+        email: email.toLowerCase().trim(),
       },
       include: {
         facility: {
@@ -84,13 +34,52 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    if (!user) {
-      console.error(`User not found in database for email: ${user_email}`);
+    // ユーザーが存在しない、またはパスワードが設定されていない
+    if (!user || !user.password) {
       return NextResponse.json(
-        { error: 'ユーザー情報が見つかりません。管理者にお問い合わせください。' },
-        { status: 404 }
+        { error: 'メールアドレスまたはパスワードが正しくありません' },
+        { status: 401 }
       );
     }
+
+    // ユーザーのステータスチェック
+    if (user.status !== 'ACTIVE') {
+      return NextResponse.json(
+        { error: 'このアカウントは無効化されています。管理者にお問い合わせください。' },
+        { status: 403 }
+      );
+    }
+
+    // STAFF ロールのみログイン可能（MEMBER は施設が管理する利用者なのでログイン不可）
+    if (user.role !== 'STAFF' && user.role !== 'ADMIN') {
+      return NextResponse.json(
+        { error: 'ログイン権限がありません' },
+        { status: 403 }
+      );
+    }
+
+    // パスワード検証
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+
+    if (!isPasswordValid) {
+      return NextResponse.json(
+        { error: 'メールアドレスまたはパスワードが正しくありません' },
+        { status: 401 }
+      );
+    }
+
+    // JWT トークンを生成
+    const jwtSecret = process.env.NEXTAUTH_SECRET || 'default-secret-change-in-production';
+    const token = jwt.sign(
+      {
+        userId: user.id,
+        email: user.email,
+        role: user.role,
+        facilityId: user.facilityId,
+      },
+      jwtSecret,
+      { expiresIn: '7d' } // 7日間有効
+    );
 
     // ログイン成功レスポンス
     return NextResponse.json({
