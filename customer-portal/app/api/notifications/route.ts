@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { successResponse, errorResponse } from '@/lib/api-response';
+import { successResponse, errorResponse } from '@/lib/utils/response';
 
 /**
  * GET /api/notifications
