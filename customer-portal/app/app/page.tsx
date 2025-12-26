@@ -110,6 +110,9 @@ export default function HomePage() {
     levels: Array<{ level: number; wage: number }>;
   } | null>(null);
 
+  // Google Calendar events state
+  const [calendarEvents, setCalendarEvents] = useState<Record<number, any[]>>({});
+
   const nextDeadline = "2024年12月15日"; // これは固定値
 
   // Fetch data from API
@@ -140,6 +143,25 @@ export default function HomePage() {
 
     fetchData();
   }, []);
+
+  // Fetch Google Calendar events when month/year changes
+  useEffect(() => {
+    async function fetchCalendarEvents() {
+      try {
+        const response = await fetch(`/api/calendar-events?year=${selectedYear}&month=${selectedMonth}`);
+        const data = await response.json();
+
+        if (data.success) {
+          setCalendarEvents(data.data.events || {});
+        }
+      } catch (err) {
+        console.error('Failed to fetch calendar events:', err);
+        // カレンダーイベントの取得失敗はエラー表示しない（オプション機能のため）
+      }
+    }
+
+    fetchCalendarEvents();
+  }, [selectedYear, selectedMonth]);
 
   // Determine current phase
   const getCurrentPhase = () => {
@@ -212,7 +234,18 @@ export default function HomePage() {
 
   const getDateInfo = (day: number | null) => {
     if (!day) return null;
-    return importantDates.find(d => d.date === day);
+
+    // 重要な日付（システム定義）
+    const importantDate = importantDates.find(d => d.date === day);
+
+    // Googleカレンダーのイベント
+    const googleEvents = calendarEvents[day] || [];
+
+    return {
+      importantDate,
+      googleEvents,
+      hasEvents: !!importantDate || googleEvents.length > 0,
+    };
   };
 
   // ローディング中の表示
@@ -498,7 +531,7 @@ export default function HomePage() {
                         className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium transition-all ${
                           isTodayDate
                             ? "bg-gradient-to-br from-blue-500 to-cyan-500 text-white shadow-lg ring-2 ring-blue-300"
-                            : dateInfo
+                            : dateInfo?.hasEvents
                             ? "bg-gradient-to-br from-purple-400 to-pink-400 text-white shadow-md hover:shadow-lg"
                             : "text-gray-700 hover:bg-gray-100"
                         }`}
@@ -520,9 +553,10 @@ export default function HomePage() {
                 </button>
               </div>
               <div className="space-y-3">
+                {/* 重要な日付（システム定義） */}
                 {importantDates.map((item, index) => (
                   <div
-                    key={index}
+                    key={`important-${index}`}
                     className="flex items-start gap-3 p-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors"
                   >
                     <div
@@ -546,13 +580,43 @@ export default function HomePage() {
                         {selectedMonth}月{item.date}日
                       </p>
                     </div>
-                    <button className="text-gray-400 hover:text-gray-600">
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-                      </svg>
-                    </button>
                   </div>
                 ))}
+
+                {/* Googleカレンダーのイベント */}
+                {Object.entries(calendarEvents).flatMap(([day, events]) =>
+                  events.map((event, idx) => (
+                    <div
+                      key={`google-${day}-${idx}`}
+                      className="flex items-start gap-3 p-3 rounded-xl bg-gradient-to-r from-indigo-50 to-purple-50 hover:from-indigo-100 hover:to-purple-100 transition-colors border border-indigo-200"
+                    >
+                      <div className="flex-shrink-0 px-3 py-1 rounded-full text-xs font-semibold text-white bg-gradient-to-r from-indigo-400 to-purple-500">
+                        予定
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-gray-800 mb-0.5">
+                          {event.title}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {selectedMonth}月{day}日
+                          {event.isAllDay ? '' : ` ${new Date(event.start).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}`}
+                        </p>
+                        {event.description && (
+                          <p className="text-xs text-gray-600 mt-1 line-clamp-2">
+                            {event.description}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+
+                {/* イベントがない場合 */}
+                {importantDates.length === 0 && Object.keys(calendarEvents).length === 0 && (
+                  <p className="text-center text-sm text-gray-400 py-4">
+                    今月の予定はありません
+                  </p>
+                )}
               </div>
             </div>
           </CardContent>
