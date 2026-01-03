@@ -23,6 +23,8 @@ model Facility {
   email             String?
   latitude          Float?   // 緯度（天気データ取得用）
   longitude         Float?   // 経度（天気データ取得用）
+  driveFolderUrl    String?  // Googleドライブフォルダ
+  spreadsheetUrl    String?  // 施設管理シート
   bankName          String?
   bankBranch        String?
   bankAccountType   BankAccountType?
@@ -49,6 +51,8 @@ model User {
   password           String?    // ハッシュ化されたパスワード（独自認証用）
   name               String
   initials           String?
+  spreadsheetUrl     String?    // 利用者の個人シート（MEMBERの場合）
+  spreadsheetType    String?    // "entry", "focus_simple", "focus_normal"
   status             UserStatus @default(ACTIVE)
   startDate          DateTime?
   cancellationDate   DateTime?
