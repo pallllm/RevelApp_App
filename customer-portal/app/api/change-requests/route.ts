@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth';
 
 /**
  * POST /api/change-requests
@@ -7,6 +8,12 @@ import { prisma } from '@/lib/prisma';
  */
 export async function POST(request: NextRequest) {
   try {
+    // JWT認証チェック
+    const [payload, authError] = requireAuth(request);
+    if (authError) {
+      return authError;
+    }
+
     const body = await request.json();
     const { requestType, requestData, notes } = body;
 
@@ -18,31 +25,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 開発環境では固定のユーザーを取得し、そこからfacilityIdを取得
-    // 本番環境ではJWTトークンから取得
-    const DEV_USER_ID = 'test-user-staff-001';
-
-    // 開発用のユーザーを取得
-    const firstUser = await prisma.user.findUnique({
-      where: {
-        id: DEV_USER_ID,
-      },
-    });
-
-    if (!firstUser) {
-      return NextResponse.json(
-        { error: 'Development user not found' },
-        { status: 400 }
-      );
-    }
-
-    const facilityId = firstUser.facilityId;
+    const { userId, facilityId } = payload;
 
     // 変更申請を作成
     const changeRequest = await prisma.changeRequest.create({
       data: {
-        facilityId: facilityId,
-        requesterId: firstUser.id,
+        facilityId: facilityId!,
+        requesterId: userId,
         requestType,
         requestData,
         notes: notes || null,
@@ -74,22 +63,13 @@ export async function POST(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
   try {
-    // 開発環境では固定のユーザーを取得し、そこからfacilityIdを取得
-    // 本番環境ではJWTトークンから取得
-    const DEV_USER_ID = 'test-user-staff-001';
-
-    const user = await prisma.user.findUnique({
-      where: { id: DEV_USER_ID },
-    });
-
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Development user not found' },
-        { status: 400 }
-      );
+    // JWT認証チェック
+    const [payload, authError] = requireAuth(request);
+    if (authError) {
+      return authError;
     }
 
-    const facilityId = user.facilityId;
+    const { facilityId } = payload;
 
     // 変更申請一覧を取得（新しい順）
     const changeRequests = await prisma.changeRequest.findMany({

@@ -125,7 +125,16 @@ export default function RequestsPage() {
         setLoading(true);
         setError(null);
 
-        const response = await fetch('/api/change-requests');
+        const token = localStorage.getItem('token');
+        if (!token) {
+          throw new Error('認証トークンが見つかりません');
+        }
+
+        const response = await fetch('/api/change-requests', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
 
         if (!response.ok) {
           throw new Error('申請一覧の取得に失敗しました');
@@ -162,10 +171,16 @@ export default function RequestsPage() {
   // 申請を送信する共通関数
   const submitRequest = async (requestType: string, requestData: any, notes?: string) => {
     try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('認証トークンが見つかりません');
+      }
+
       const response = await fetch('/api/change-requests', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
           requestType,
@@ -179,7 +194,11 @@ export default function RequestsPage() {
       }
 
       // 成功したら申請履歴を再取得
-      const data = await fetch('/api/change-requests').then(r => r.json());
+      const data = await fetch('/api/change-requests', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      }).then(r => r.json());
       setRequests(data.changeRequests);
 
       alert('申請を送信しました。承認をお待ちください。');
