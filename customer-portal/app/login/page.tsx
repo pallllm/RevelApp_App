@@ -34,8 +34,8 @@ export default function LoginPage() {
       }
 
       // トークンをローカルストレージに保存
-      localStorage.setItem("auth_token", data.token);
-      localStorage.setItem("user_data", JSON.stringify(data.user));
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.user));
 
       // ダッシュボードへリダイレクト
       router.push("/app");
