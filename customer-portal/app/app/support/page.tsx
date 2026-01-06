@@ -1,36 +1,18 @@
-"use client";
-
+import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   LifeBuoy,
-  MessageSquare,
   FileText,
   ExternalLink,
   Mail,
   Phone,
   Clock,
+  MessageSquare,
+  BookOpen,
 } from "lucide-react";
-
-const faqs = [
-  {
-    question: "ゲームの変更はどのように申請しますか？",
-    answer: "契約情報ページから「変更申請」ボタンをクリックして申請できます。",
-  },
-  {
-    question: "工賃の振込日はいつですか？",
-    answer: "毎月25日に前月分の工賃が振り込まれます。",
-  },
-  {
-    question: "利用者を追加したい場合は？",
-    answer: "契約情報ページから利用者追加申請を行ってください。",
-  },
-  {
-    question: "メンテナンス予定の確認方法は？",
-    answer: "ホームページの通知エリアに表示されます。",
-  },
-];
+import { getAllPages, extractPlainText } from "@/lib/wordpress";
+import { sanitizeExcerpt } from "@/lib/sanitize";
 
 const supportChannels = [
   {
@@ -56,7 +38,10 @@ const supportChannels = [
   },
 ];
 
-export default function SupportPage() {
+export default async function SupportPage() {
+  // WordPressからページ一覧を取得
+  const pages = await getAllPages();
+
   return (
     <div className="space-y-6">
       {/* Page Header */}
@@ -93,6 +78,59 @@ export default function SupportPage() {
         ))}
       </div>
 
+      {/* RevelApp Documentation from WordPress */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <BookOpen className="h-5 w-5" />
+            RevelAppについて
+          </CardTitle>
+          <p className="text-sm text-muted-foreground">
+            ゲーム一覧、使い方、マニュアルなど
+          </p>
+        </CardHeader>
+        <CardContent>
+          {pages.length > 0 ? (
+            <div className="grid gap-4 md:grid-cols-2">
+              {pages.map((page) => (
+                <Link
+                  key={page.id}
+                  href={`/app/support/${page.slug}`}
+                  className="flex items-start gap-3 p-4 border rounded-lg hover:bg-accent transition-colors group"
+                >
+                  <div className="flex-shrink-0 mt-1">
+                    <FileText className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium group-hover:text-primary transition-colors line-clamp-1">
+                      {page.title.rendered}
+                    </p>
+                    {page.excerpt.rendered && (
+                      <p
+                        className="text-sm text-muted-foreground mt-1 line-clamp-2"
+                        dangerouslySetInnerHTML={{
+                          __html: sanitizeExcerpt(page.excerpt.rendered),
+                        }}
+                      />
+                    )}
+                    {!page.excerpt.rendered && page.content.rendered && (
+                      <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                        {extractPlainText(page.content.rendered, 100)}
+                      </p>
+                    )}
+                  </div>
+                  <ExternalLink className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-1 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              <p>現在、ドキュメントを読み込んでいます...</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Quick Actions */}
       <Card>
         <CardHeader>
@@ -100,109 +138,34 @@ export default function SupportPage() {
         </CardHeader>
         <CardContent>
           <div className="grid gap-3 md:grid-cols-2">
-            <Button
-              variant="outline"
-              className="justify-start h-auto py-4"
-              asChild
+            <Link
+              href="/app/requests"
+              className="flex items-center gap-3 p-4 border rounded-lg hover:bg-accent transition-colors"
             >
-              <a href="/app/contract">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-lg bg-purple-500/10 flex items-center justify-center">
-                    <FileText className="h-5 w-5 text-purple-600" />
-                  </div>
-                  <div className="text-left">
-                    <p className="font-semibold">変更申請</p>
-                    <p className="text-sm text-muted-foreground">
-                      契約内容の変更申請
-                    </p>
-                  </div>
-                </div>
-              </a>
-            </Button>
-            <Button
-              variant="outline"
-              className="justify-start h-auto py-4"
-              asChild
-            >
-              <a href="/app/members">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                    <MessageSquare className="h-5 w-5 text-blue-600" />
-                  </div>
-                  <div className="text-left">
-                    <p className="font-semibold">利用者追加</p>
-                    <p className="text-sm text-muted-foreground">
-                      新規利用者の追加申請
-                    </p>
-                  </div>
-                </div>
-              </a>
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* FAQ */}
-      <Card>
-        <CardHeader>
-          <CardTitle>よくあるご質問</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {faqs.map((faq, index) => (
-              <div
-                key={index}
-                className="border-b last:border-0 pb-4 last:pb-0"
-              >
-                <p className="font-semibold mb-2">{faq.question}</p>
-                <p className="text-sm text-muted-foreground">{faq.answer}</p>
+              <div className="h-10 w-10 rounded-lg bg-purple-500/10 flex items-center justify-center">
+                <FileText className="h-5 w-5 text-purple-600" />
               </div>
-            ))}
-          </div>
-          <Button variant="outline" className="w-full mt-4 gap-2">
-            すべてのFAQを見る
-            <ExternalLink className="h-4 w-4" />
-          </Button>
-        </CardContent>
-      </Card>
-
-      {/* Resources */}
-      <Card>
-        <CardHeader>
-          <CardTitle>リソース</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-3 md:grid-cols-2">
-            <a
-              href="#"
-              className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent transition-colors"
-            >
-              <div className="flex items-center gap-3">
-                <FileText className="h-5 w-5 text-primary" />
-                <div>
-                  <p className="font-medium">ユーザーガイド</p>
-                  <p className="text-sm text-muted-foreground">
-                    基本的な使い方
-                  </p>
-                </div>
+              <div className="text-left">
+                <p className="font-semibold">変更申請</p>
+                <p className="text-sm text-muted-foreground">
+                  契約内容の変更申請
+                </p>
               </div>
-              <ExternalLink className="h-4 w-4 text-muted-foreground" />
-            </a>
-            <a
-              href="#"
-              className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent transition-colors"
+            </Link>
+            <Link
+              href="/app/members"
+              className="flex items-center gap-3 p-4 border rounded-lg hover:bg-accent transition-colors"
             >
-              <div className="flex items-center gap-3">
-                <FileText className="h-5 w-5 text-primary" />
-                <div>
-                  <p className="font-medium">契約書類</p>
-                  <p className="text-sm text-muted-foreground">
-                    契約関連ドキュメント
-                  </p>
-                </div>
+              <div className="h-10 w-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                <MessageSquare className="h-5 w-5 text-blue-600" />
               </div>
-              <ExternalLink className="h-4 w-4 text-muted-foreground" />
-            </a>
+              <div className="text-left">
+                <p className="font-semibold">利用者管理</p>
+                <p className="text-sm text-muted-foreground">
+                  利用者情報の確認・管理
+                </p>
+              </div>
+            </Link>
           </div>
         </CardContent>
       </Card>
