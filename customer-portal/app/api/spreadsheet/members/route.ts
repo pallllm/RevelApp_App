@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { NextRequest } from 'next/server';
 import { verifyAuth } from '@/lib/auth/verify';
 import { readMemberListSheet } from '@/lib/google/spreadsheet-reader';

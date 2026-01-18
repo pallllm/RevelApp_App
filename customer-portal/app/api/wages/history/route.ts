@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { NextRequest } from 'next/server';
 import { verifyWordPressToken, extractTokenFromHeader } from '@/lib/auth/wordpress';
 import { prisma } from '@/lib/prisma';

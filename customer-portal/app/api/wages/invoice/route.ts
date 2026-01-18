@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth, isStaffOrAbove } from '@/lib/auth/verify';
 import { prisma } from '@/lib/prisma';
