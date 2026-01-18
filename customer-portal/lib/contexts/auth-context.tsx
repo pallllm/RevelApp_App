@@ -36,7 +36,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // 初期化: localStorageからトークンとユーザー情報を読み込み
   useEffect(() => {
     const storedToken = localStorage.getItem("auth_token");
-    const storedUser = localStorage.getItem("user_data");
+    // 後方互換性のため両方のキーをチェック
+    const storedUser = localStorage.getItem("user") || localStorage.getItem("user_data");
 
     if (storedToken && storedUser) {
       try {
@@ -45,6 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } catch (error) {
         console.error("Failed to parse stored user data:", error);
         localStorage.removeItem("auth_token");
+        localStorage.removeItem("user");
         localStorage.removeItem("user_data");
       }
     }
@@ -63,14 +65,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(newToken);
     setUser(newUser);
     localStorage.setItem("auth_token", newToken);
-    localStorage.setItem("user_data", JSON.stringify(newUser));
+    localStorage.setItem("user", JSON.stringify(newUser));
   };
 
   const logout = () => {
     setToken(null);
     setUser(null);
     localStorage.removeItem("auth_token");
-    localStorage.removeItem("user_data");
+    localStorage.removeItem("user");
     router.push("/login");
   };
 
