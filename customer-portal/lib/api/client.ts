@@ -141,7 +141,7 @@ export function formatWagePhase(wagePhase: {
 /**
  * 工賃履歴を取得
  */
-export async function getWageHistory() {
+export async function getWageHistory(fetchAll = false) {
   return apiRequest<{
     history: Array<{
       id: string;
@@ -152,7 +152,9 @@ export async function getWageHistory() {
       status: string;
       paymentDate: string | null;
     }>;
-  }>('/api/wages/history');
+    totalCount: number;
+    hasMore: boolean;
+  }>(`/api/wages/history${fetchAll ? '?all=true' : ''}`);
 }
 
 /**
@@ -193,13 +195,18 @@ export async function getHealthRecords(userId: string, year: number, month: numb
       fatigueLevel: number | null;
       sleepHours: number | null;
       mood: string | null;
-      emotions: any;
+      emotions: string | null;
+      emotionContext: string | null;
+      workReport: string | null;
       weather: string | null;
       temperature: number | null;
       hasPressureChange: boolean;
+    }>;
+    gameReflections: Array<{
+      date: string;
+      gamesPlayed: string[];
       achievedTasks: string | null;
       difficultTasks: string | null;
-      freeNotes: string | null;
     }>;
   }>(`/api/health-records?userId=${userId}&year=${year}&month=${month}`);
 }
@@ -210,6 +217,13 @@ export async function getHealthRecords(userId: string, year: number, month: numb
 export async function getGameStats(userId: string, year: number, month: number) {
   return apiRequest<{
     gameStats: Array<{
+      gameId: string;
+      gameName: string;
+      gameLevel: number;
+      gameImageUrl: string | null;
+      playCount: number;
+    }>;
+    cumulativeGameStats: Array<{
       gameId: string;
       gameName: string;
       gameLevel: number;
@@ -239,4 +253,169 @@ export async function getNotifications(facilityId: string) {
     }>;
     unreadCount: number;
   }>(`/api/notifications?facilityId=${facilityId}`);
+}
+
+/**
+ * 工賃プレビューを取得
+ */
+export async function getWagePreview(year: number, month: number) {
+  return apiRequest<{
+    success: boolean;
+    result: {
+      facilityId: string;
+      year: number;
+      month: number;
+      summary: {
+        totalWage: number;
+        memberCount: number;
+        totalPlayCount: number;
+        averageWagePerMember: number;
+      };
+      members: Array<{
+        userId: string;
+        userName: string;
+        totalWage: number;
+        validPlayCount: number;
+      }>;
+      carryover: {
+        previousCarryover: number;
+        currentMonthWage: number;
+        totalAmount: number;
+        paymentAmount: number;
+        nextCarryover: number;
+      };
+    };
+  }>(`/api/wages/calculate/preview?year=${year}&month=${month}`);
+}
+
+/**
+ * 工賃を確定する
+ */
+export async function confirmWage(year: number, month: number) {
+  return apiRequest<{
+    success: boolean;
+    message: string;
+    wage: {
+      id: string;
+      year: number;
+      month: number;
+      totalAmount: number;
+      status: string;
+    };
+  }>('/api/wages/confirm', {
+    method: 'POST',
+    body: JSON.stringify({ year, month }),
+  });
+}
+
+/**
+ * 報酬決定通知書PDFをダウンロード
+ */
+export function downloadWageNotice(year: number, month: number) {
+  const token = process.env.NODE_ENV === 'development'
+    ? 'dev-token'
+    : localStorage.getItem('auth_token');
+
+  // PDFダウンロード用のURLを生成
+  const url = `/api/wages/notice?year=${year}&month=${month}`;
+
+  // fetchでPDFを取得してダウンロード
+  return fetch(url, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  }).then(response => {
+    if (!response.ok) {
+      throw new Error('Failed to download notice');
+    }
+    return response.blob();
+  }).then(blob => {
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `報酬決定通知書_${year}年${month}月.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  });
+}
+
+/**
+ * 請求書PDFをダウンロード
+ */
+export function downloadWageInvoice(year: number, month: number) {
+  const token = process.env.NODE_ENV === 'development'
+    ? 'dev-token'
+    : localStorage.getItem('auth_token');
+
+  const url = `/api/wages/invoice?year=${year}&month=${month}`;
+
+  return fetch(url, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  }).then(response => {
+    if (!response.ok) {
+      throw new Error('Failed to download invoice');
+    }
+    return response.blob();
+  }).then(blob => {
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `請求書_${year}年${month}月.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  });
+}
+
+/**
+ * カレンダーイベントを取得
+ */
+export async function getCalendarEvents(year: number, month: number) {
+  return apiRequest<{
+    events: Record<number, Array<{
+      id: string;
+      title: string;
+      description?: string;
+      start: string;
+      end: string;
+      isAllDay: boolean;
+    }>>;
+    totalEvents: number;
+  }>(`/api/calendar-events?year=${year}&month=${month}`);
+}
+
+/**
+ * 体調レポートPDFをダウンロード
+ */
+export function downloadHealthReport(userId: string, userName: string, year: number, month: number) {
+  const token = process.env.NODE_ENV === 'development'
+    ? 'dev-token'
+    : localStorage.getItem('auth_token');
+
+  const url = `/api/health-report?userId=${userId}&year=${year}&month=${month}`;
+
+  return fetch(url, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  }).then(response => {
+    if (!response.ok) {
+      throw new Error('Failed to download health report');
+    }
+    return response.blob();
+  }).then(blob => {
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `体調レポート_${userName}_${year}年${month}月.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  });
 }

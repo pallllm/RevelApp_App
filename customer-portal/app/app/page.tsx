@@ -15,7 +15,7 @@ import {
   ChevronRight,
   TrendingUp,
 } from "lucide-react";
-import { getFacility, getFacilityStats, formatPlanType, formatWagePhase } from "@/lib/api/client";
+import { getFacility, getFacilityStats, formatPlanType, formatWagePhase, getCalendarEvents } from "@/lib/api/client";
 
 // Announcements data
 const announcements = [
@@ -52,8 +52,6 @@ const announcements = [
 // Important dates for calendar
 const importantDates = [
   { date: 15, title: "変更申請締切", type: "deadline" as const },
-  { date: 25, title: "請求確定日", type: "billing" as const },
-  { date: 31, title: "月末メンテナンス", type: "maintenance" as const },
 ];
 
 // Wage phase data - soft, professional colors
@@ -148,12 +146,8 @@ export default function HomePage() {
   useEffect(() => {
     async function fetchCalendarEvents() {
       try {
-        const response = await fetch(`/api/calendar-events?year=${selectedYear}&month=${selectedMonth}`);
-        const data = await response.json();
-
-        if (data.success) {
-          setCalendarEvents(data.data.events || {});
-        }
+        const result = await getCalendarEvents(selectedYear, selectedMonth);
+        setCalendarEvents(result.events || {});
       } catch (err) {
         console.error('Failed to fetch calendar events:', err);
         // カレンダーイベントの取得失敗はエラー表示しない（オプション機能のため）
@@ -333,7 +327,7 @@ export default function HomePage() {
                         <Badge
                           variant={
                             announcement.type === "important"
-                              ? "destructive"
+                              ? "danger"
                               : announcement.type === "maintenance"
                               ? "warning"
                               : "default"
@@ -559,18 +553,8 @@ export default function HomePage() {
                     key={`important-${index}`}
                     className="flex items-start gap-3 p-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors"
                   >
-                    <div
-                      className={`flex-shrink-0 px-3 py-1 rounded-full text-xs font-semibold text-white ${
-                        item.type === "deadline"
-                          ? "bg-gradient-to-r from-pink-400 to-pink-500"
-                          : item.type === "billing"
-                          ? "bg-gradient-to-r from-purple-400 to-purple-500"
-                          : "bg-gradient-to-r from-blue-400 to-blue-500"
-                      }`}
-                    >
-                      {item.type === "deadline" && "締切"}
-                      {item.type === "billing" && "請求"}
-                      {item.type === "maintenance" && "メンテ"}
+                    <div className="flex-shrink-0 px-3 py-1 rounded-full text-xs font-semibold text-white bg-gradient-to-r from-pink-400 to-pink-500">
+                      締切
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-gray-800 mb-0.5">
@@ -623,17 +607,6 @@ export default function HomePage() {
         </Card>
       </div>
 
-      {/* Expansion Free Space (Future Features) */}
-      <Card className="border-dashed border-2 border-purple-200 bg-white/50 shadow-sm">
-        <CardContent className="pt-6">
-          <div className="text-center text-muted-foreground py-8">
-            <p className="text-sm font-medium">今後の機能追加エリア</p>
-            <p className="text-xs mt-1">
-              利用上限アラート・未対応タスク・最近の変更申請などを表示予定
-            </p>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }

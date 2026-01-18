@@ -214,7 +214,7 @@ export default function GameDetailPage() {
                     レベル {game.level}
                   </Badge>
                   {game.requiresAnydesk && (
-                    <Badge variant="outline">AnyDesk必要</Badge>
+                    <Badge variant="default" className="border border-current bg-transparent">AnyDesk必要</Badge>
                   )}
                 </div>
               </div>

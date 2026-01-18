@@ -92,7 +92,7 @@ const REQUEST_TYPE_LABELS: Record<string, string> = {
 const STATUS_CONFIG = {
   PENDING: { label: "確認中", variant: "warning" as const, icon: Clock },
   APPROVED: { label: "承認済み", variant: "success" as const, icon: CheckCircle },
-  REJECTED: { label: "却下", variant: "destructive" as const, icon: XCircle },
+  REJECTED: { label: "却下", variant: "danger" as const, icon: XCircle },
 };
 
 interface ChangeRequest {

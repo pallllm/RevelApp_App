@@ -6,8 +6,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 // ============================================
@@ -25,6 +26,7 @@ model Facility {
   longitude         Float?   // 経度（天気データ取得用）
   driveFolderUrl    String?  // Googleドライブフォルダ
   spreadsheetUrl    String?  // 施設管理シート
+  googleCalendarId  String?  // Googleカレンダー連携用ID
   bankName          String?
   bankBranch        String?
   bankAccountType   BankAccountType?

@@ -5,7 +5,7 @@ export function successResponse<T>(data: T, status: number = 200) {
   return NextResponse.json(data, { status });
 }
 
-export function errorResponse(error: unknown) {
+export function errorResponse(error: unknown, statusCode?: number) {
   console.error('API Error:', error);
 
   if (error instanceof ApiError) {
@@ -14,7 +14,7 @@ export function errorResponse(error: unknown) {
         error: error.message,
         ...(error.details && { details: error.details }),
       },
-      { status: error.statusCode }
+      { status: statusCode || error.statusCode }
     );
   }
 
@@ -23,7 +23,7 @@ export function errorResponse(error: unknown) {
       {
         error: error.message,
       },
-      { status: 500 }
+      { status: statusCode || 500 }
     );
   }
 
@@ -31,7 +31,7 @@ export function errorResponse(error: unknown) {
     {
       error: 'An unexpected error occurred',
     },
-    { status: 500 }
+    { status: statusCode || 500 }
   );
 }
 

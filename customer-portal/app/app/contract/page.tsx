@@ -57,7 +57,7 @@ export default function ContractPage() {
 
         // 事業所情報を設定
         setFacilityName(data.facility.name);
-        setPlanType(data.facility.planType);
+        setPlanType(data.facility.planType as PlanType);
 
         // メンバー情報を設定
         const memberUsers = data.facility.members.filter((m: any) => m.role === 'MEMBER');

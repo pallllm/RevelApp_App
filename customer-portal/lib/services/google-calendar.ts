@@ -9,12 +9,12 @@ import { google } from 'googleapis';
 const getGoogleAuth = () => {
   try {
     // サービスアカウントキーをJSON形式で環境変数から取得
-    const credentials = process.env.GOOGLE_SERVICE_ACCOUNT_KEY
-      ? JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_KEY)
+    const credentials = process.env.GOOGLE_SERVICE_ACCOUNT_JSON
+      ? JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_JSON)
       : null;
 
     if (!credentials) {
-      console.warn('GOOGLE_SERVICE_ACCOUNT_KEY is not set. Google Calendar integration is disabled.');
+      console.warn('GOOGLE_SERVICE_ACCOUNT_JSON is not set. Google Calendar integration is disabled.');
       return null;
     }
 
@@ -77,7 +77,7 @@ export async function fetchGoogleCalendarEvents(
       return {
         id: event.id || '',
         summary: event.summary || '(タイトルなし)',
-        description: event.description,
+        description: event.description ?? undefined,
         start: event.start?.dateTime || event.start?.date || '',
         end: event.end?.dateTime || event.end?.date || '',
         isAllDay,

@@ -5,6 +5,7 @@ import { successResponse, errorResponse } from '@/lib/utils/response';
 
 /**
  * GET /api/wages/history
+ * GET /api/wages/history?all=true (全件取得)
  * 工賃履歴を取得
  */
 export async function GET(request: NextRequest) {
@@ -13,7 +14,11 @@ export async function GET(request: NextRequest) {
     const authHeader = extractTokenFromHeader(request.headers);
     const user = await verifyWordPressToken(authHeader);
 
-    // 工賃履歴を取得（最新12ヶ月分）
+    // クエリパラメータで全件取得かどうかを判定
+    const { searchParams } = new URL(request.url);
+    const fetchAll = searchParams.get('all') === 'true';
+
+    // 工賃履歴を取得
     const wageHistory = await prisma.monthlyWage.findMany({
       where: {
         facilityId: user.facilityId,
@@ -22,7 +27,14 @@ export async function GET(request: NextRequest) {
         { year: 'desc' },
         { month: 'desc' },
       ],
-      take: 12,
+      ...(fetchAll ? {} : { take: 6 }), // デフォルトは最新6ヶ月、all=trueで全件
+    });
+
+    // 総件数を取得
+    const totalCount = await prisma.monthlyWage.count({
+      where: {
+        facilityId: user.facilityId,
+      },
     });
 
     return successResponse({
@@ -35,6 +47,8 @@ export async function GET(request: NextRequest) {
         status: wage.status,
         paymentDate: wage.paymentDate,
       })),
+      totalCount,
+      hasMore: !fetchAll && totalCount > 6,
     });
   } catch (error) {
     return errorResponse(error);

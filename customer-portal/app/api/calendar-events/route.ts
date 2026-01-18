@@ -1,13 +1,18 @@
 import { NextRequest } from 'next/server';
 import { successResponse, errorResponse } from '@/lib/utils/response';
 import { fetchMonthlyCalendarEvents } from '@/lib/services/google-calendar';
+import { verifyAuth } from '@/lib/auth/verify';
+import { prisma } from '@/lib/prisma';
 
 /**
  * GET /api/calendar-events?year=2025&month=1
- * 指定月のGoogleカレンダーイベントを取得
+ * 指定月のGoogleカレンダーイベントを取得（施設固有のカレンダーIDを使用）
  */
 export async function GET(request: NextRequest) {
   try {
+    // 認証
+    const user = await verifyAuth(request);
+
     const { searchParams } = new URL(request.url);
     const year = parseInt(searchParams.get('year') || '0');
     const month = parseInt(searchParams.get('month') || '0');
@@ -19,8 +24,14 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Googleカレンダーからイベントを取得
-    const events = await fetchMonthlyCalendarEvents(year, month);
+    // 施設情報を取得してgoogleCalendarIdを使用
+    const facility = await prisma.facility.findUnique({
+      where: { id: user.facilityId },
+      select: { googleCalendarId: true },
+    });
+
+    // Googleカレンダーからイベントを取得（施設のカレンダーIDを使用）
+    const events = await fetchMonthlyCalendarEvents(year, month, facility?.googleCalendarId || undefined);
 
     // イベントを日付ごとにグループ化
     const eventsByDate: Record<number, any[]> = {};

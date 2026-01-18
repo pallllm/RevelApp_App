@@ -2,10 +2,11 @@ import { NextRequest } from 'next/server';
 import { verifyWordPressToken, extractTokenFromHeader } from '@/lib/auth/wordpress';
 import { prisma } from '@/lib/prisma';
 import { successResponse, errorResponse } from '@/lib/utils/response';
+import { readGamePlayRecords, getAvailableMonths } from '@/lib/google/spreadsheet-reader';
 
 /**
  * GET /api/game-stats?userId=xxx&year=2024&month=12
- * 指定ユーザーの指定月のゲームプレイ統計を取得
+ * 指定ユーザーの指定月のゲームプレイ統計を取得（スプレッドシートから読み込み）
  */
 export async function GET(request: NextRequest) {
   try {
@@ -26,91 +27,127 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // ユーザーが同じ事業所に所属しているか確認
+    // ユーザーが同じ事業所に所属しているか確認 & スプレッドシートURL取得
     const targetUser = await prisma.user.findUnique({
       where: { id: userId },
+      select: {
+        id: true,
+        facilityId: true,
+        spreadsheetUrl: true,
+      },
     });
 
     if (!targetUser || targetUser.facilityId !== user.facilityId) {
       return errorResponse(new Error('Unauthorized'), 403);
     }
 
-    // 指定月の最初と最後の日付
-    const startDate = new Date(year, month - 1, 1);
-    const endDate = new Date(year, month, 0, 23, 59, 59);
+    // スプレッドシートURLがない場合はエラー
+    if (!targetUser.spreadsheetUrl) {
+      return errorResponse(
+        new Error('User does not have a spreadsheet URL configured'),
+        400
+      );
+    }
+
+    // スプレッドシートからゲームプレイ記録を読み込み
+    const gameRecords = await readGamePlayRecords(
+      targetUser.spreadsheetUrl,
+      year,
+      month
+    );
 
     // ゲーム別プレイ回数を集計
-    const gamePlayStats = await prisma.gamePlayRecord.groupBy({
-      by: ['gameId'],
-      where: {
-        userId,
-        playedAt: {
-          gte: startDate,
-          lte: endDate,
-        },
-      },
-      _count: {
-        id: true,
-      },
-    });
-
-    // ゲーム情報を取得
-    const gameIds = gamePlayStats.map(stat => stat.gameId);
-    const games = await prisma.game.findMany({
-      where: {
-        id: { in: gameIds },
-      },
-    });
+    const gameCountMap = new Map<string, number>();
+    for (const record of gameRecords) {
+      const count = gameCountMap.get(record.gameName) || 0;
+      gameCountMap.set(record.gameName, count + 1);
+    }
 
     // 統計データを整形
-    const stats = gamePlayStats.map(stat => {
-      const game = games.find(g => g.id === stat.gameId);
-      return {
-        gameId: stat.gameId,
-        gameName: game?.name || 'Unknown',
-        gameLevel: game?.level || 0,
-        gameImageUrl: game?.imageUrl,
-        playCount: stat._count.id,
-      };
-    }).sort((a, b) => b.playCount - a.playCount);
+    const stats = Array.from(gameCountMap.entries())
+      .map(([gameName, playCount]) => ({
+        gameId: gameName, // ゲーム名をIDとして使用
+        gameName,
+        gameLevel: 0, // スプレッドシートにはレベル情報なし
+        gameImageUrl: null,
+        playCount,
+      }))
+      .sort((a, b) => b.playCount - a.playCount);
 
     // 月間合計プレイ回数
-    const totalPlayCount = await prisma.gamePlayRecord.count({
-      where: {
-        userId,
-        playedAt: {
-          gte: startDate,
-          lte: endDate,
-        },
-      },
-    });
+    const totalPlayCount = gameRecords.length;
 
-    // 累計プレイ回数（選択した月まで）
-    const cumulativeEndDate = new Date(year, month, 0, 23, 59, 59);
-    const totalAllTimePlayCount = await prisma.gamePlayRecord.count({
-      where: {
-        userId,
-        playedAt: {
-          lte: cumulativeEndDate,
-        },
-      },
-    });
+    // 累計プレイ回数を計算（利用可能な全月のデータを集計）
+    let totalAllTimePlayCount = 0;
+    const cumulativeGameCountMap = new Map<string, number>();
 
-    // 前月の合計プレイ回数（比較用）
-    const previousMonthStart = new Date(year, month - 2, 1);
-    const previousMonthEnd = new Date(year, month - 1, 0, 23, 59, 59);
-    const previousMonthPlayCount = await prisma.gamePlayRecord.count({
-      where: {
-        userId,
-        playedAt: {
-          gte: previousMonthStart,
-          lte: previousMonthEnd,
-        },
-      },
-    });
+    try {
+      const availableMonths = await getAvailableMonths(
+        targetUser.spreadsheetUrl,
+        'game'
+      );
+
+      for (const { year: y, month: m } of availableMonths) {
+        // 選択した年月以前のみ集計
+        if (y < year || (y === year && m <= month)) {
+          let records;
+          if (y === year && m === month) {
+            records = gameRecords;
+          } else {
+            records = await readGamePlayRecords(
+              targetUser.spreadsheetUrl,
+              y,
+              m
+            );
+          }
+
+          totalAllTimePlayCount += records.length;
+
+          // ゲームごとの累計を集計
+          for (const record of records) {
+            const count = cumulativeGameCountMap.get(record.gameName) || 0;
+            cumulativeGameCountMap.set(record.gameName, count + 1);
+          }
+        }
+      }
+    } catch (e) {
+      // 累計計算に失敗した場合は今月のみ
+      totalAllTimePlayCount = totalPlayCount;
+      // 今月のデータをコピー
+      gameCountMap.forEach((count, gameName) => {
+        cumulativeGameCountMap.set(gameName, count);
+      });
+    }
+
+    // 累計統計データを整形
+    const cumulativeStats = Array.from(cumulativeGameCountMap.entries())
+      .map(([gameName, playCount]) => ({
+        gameId: gameName,
+        gameName,
+        gameLevel: 0,
+        gameImageUrl: null,
+        playCount,
+      }))
+      .sort((a, b) => b.playCount - a.playCount);
+
+    // 前月のプレイ回数
+    let previousMonthPlayCount = 0;
+    try {
+      const prevMonth = month === 1 ? 12 : month - 1;
+      const prevYear = month === 1 ? year - 1 : year;
+      const prevRecords = await readGamePlayRecords(
+        targetUser.spreadsheetUrl,
+        prevYear,
+        prevMonth
+      );
+      previousMonthPlayCount = prevRecords.length;
+    } catch (e) {
+      // 前月データがない場合は0
+    }
 
     return successResponse({
       gameStats: stats,
+      cumulativeGameStats: cumulativeStats,
       totalPlayCount,
       totalAllTimePlayCount,
       previousMonthPlayCount,

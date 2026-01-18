@@ -48,7 +48,7 @@ Organization name: RevelApp（または好きな名前）
 ```
 Name: revelapp-customer-portal
 
-Database Password: (自動生成されたパスワードをコピー！)
+Database Password: (自動生成されたパスワードをコピー！) 9fQhBw7AP7CjeFW5
                ⚠️ 重要: このパスワードは後で使います
 
 Region: Northeast Asia (Tokyo)  ← 日本から近い
@@ -82,6 +82,8 @@ URI タブを選択
 
 表示される接続文字列:
 postgresql://postgres:[YOUR-PASSWORD]@db.xxxxx.supabase.co:5432/postgres
+postgresql://postgres:9fQhBw7AP7CjeFW5@db.myfpkgydkikmfrpspjtq.supabase.co:5432/postgres
+
 ```
 
 **重要:**

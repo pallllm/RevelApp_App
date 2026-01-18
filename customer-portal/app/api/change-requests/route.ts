@@ -71,10 +71,17 @@ export async function GET(request: NextRequest) {
 
     const { facilityId } = payload;
 
+    if (!facilityId) {
+      return NextResponse.json(
+        { error: 'Facility ID is required' },
+        { status: 400 }
+      );
+    }
+
     // 変更申請一覧を取得（新しい順）
     const changeRequests = await prisma.changeRequest.findMany({
       where: {
-        facilityId: facilityId,
+        facilityId,
       },
       include: {
         requester: {

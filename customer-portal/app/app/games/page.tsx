@@ -228,12 +228,12 @@ export default function GamesPage() {
                           Lv.{game.level}
                         </Badge>
                         {game.requiresAnydesk && (
-                          <Badge variant="outline" className="text-xs">
+                          <Badge variant="default" className="text-xs border border-current bg-transparent">
                             AnyDesk
                           </Badge>
                         )}
                         {game.isBackup && (
-                          <Badge variant="secondary" className="text-xs">
+                          <Badge variant="default" className="text-xs bg-muted text-muted-foreground">
                             予備
                           </Badge>
                         )}

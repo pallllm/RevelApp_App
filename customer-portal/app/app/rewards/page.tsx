@@ -12,6 +12,10 @@ import {
   CheckCircle,
   FileText,
   AlertCircle,
+  Loader2,
+  Eye,
+  ChevronRight,
+  X,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import {
@@ -20,6 +24,10 @@ import {
   getWageHistory,
   getMemberWages,
   getWageCarryover,
+  getWagePreview,
+  confirmWage,
+  downloadWageNotice,
+  downloadWageInvoice,
 } from "@/lib/api/client";
 
 // Wage phase data - soft, professional colors
@@ -77,6 +85,13 @@ type MemberWage = {
   playCount: number;
 };
 
+type WagePreviewMember = {
+  userId: string;
+  userName: string;
+  totalWage: number;
+  validPlayCount: number;
+};
+
 export default function RewardsPage() {
   // API data state
   const [loading, setLoading] = useState(true);
@@ -91,6 +106,29 @@ export default function RewardsPage() {
   const [wageHistory, setWageHistory] = useState<WageHistoryItem[]>([]);
   const [memberWages, setMemberWages] = useState<MemberWage[]>([]);
   const [carryoverAmount, setCarryoverAmount] = useState<number>(0);
+
+  // 今月の工賃プレビュー関連
+  const [showPreview, setShowPreview] = useState(false);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewData, setPreviewData] = useState<{
+    totalAmount: number;
+    members: WagePreviewMember[];
+    carryover: { previousCarryover: number; nextCarryover: number; paymentAmount: number };
+  } | null>(null);
+  const [confirmLoading, setConfirmLoading] = useState(false);
+  const [downloadLoading, setDownloadLoading] = useState<string | null>(null);
+
+  // 履歴一覧モーダル関連
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [allHistory, setAllHistory] = useState<WageHistoryItem[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [hasMoreHistory, setHasMoreHistory] = useState(false);
+
+  // 今月の年月を取得
+  const getCurrentYearMonth = () => {
+    const now = new Date();
+    return { year: now.getFullYear(), month: now.getMonth() + 1 };
+  };
 
   // Fetch data from API
   useEffect(() => {
@@ -111,6 +149,7 @@ export default function RewardsPage() {
         // 工賃履歴を取得
         const historyData = await getWageHistory();
         setWageHistory(historyData.history);
+        setHasMoreHistory(historyData.hasMore);
 
         // 前月の利用者別工賃内訳を取得
         const now = new Date();
@@ -155,21 +194,101 @@ export default function RewardsPage() {
   });
 
   // 前月の年月を取得
-  const getCurrentYearMonth = () => {
+  const getPreviousYearMonth = () => {
     const now = new Date();
     now.setMonth(now.getMonth() - 1); // 前月
     return `${now.getFullYear()}年${now.getMonth() + 1}月`;
   };
 
-  const handleDownloadNotice = (month: string) => {
-    // TODO: 報酬決定通知書のダウンロード処理
-    console.log(`報酬決定通知書をダウンロード: ${month}`);
+  // 今月の工賃プレビューを取得
+  const handleShowPreview = async () => {
+    try {
+      setPreviewLoading(true);
+      const { year, month } = getCurrentYearMonth();
+      const data = await getWagePreview(year, month);
+      setPreviewData({
+        totalAmount: data.result.summary.totalWage,
+        members: data.result.members,
+        carryover: data.result.carryover,
+      });
+      setShowPreview(true);
+    } catch (err) {
+      console.error('Failed to fetch preview:', err);
+      alert(err instanceof Error ? err.message : 'プレビューの取得に失敗しました');
+    } finally {
+      setPreviewLoading(false);
+    }
   };
 
-  const handleDownloadInvoice = (month: string) => {
-    // TODO: 請求書のダウンロード処理
-    console.log(`請求書をダウンロード: ${month}`);
+  // 工賃を確定
+  const handleConfirmWage = async () => {
+    if (!confirm('工賃を確定しますか？確定後は変更できません。')) {
+      return;
+    }
+
+    try {
+      setConfirmLoading(true);
+      const { year, month } = getCurrentYearMonth();
+      await confirmWage(year, month);
+      alert('工賃を確定しました');
+      // 履歴を再取得
+      const historyData = await getWageHistory();
+      setWageHistory(historyData.history);
+      setShowPreview(false);
+    } catch (err) {
+      console.error('Failed to confirm wage:', err);
+      alert(err instanceof Error ? err.message : '工賃の確定に失敗しました');
+    } finally {
+      setConfirmLoading(false);
+    }
   };
+
+  // 報酬決定通知書をダウンロード
+  const handleDownloadNotice = async (year: number, month: number) => {
+    try {
+      setDownloadLoading(`notice-${year}-${month}`);
+      await downloadWageNotice(year, month);
+    } catch (err) {
+      console.error('Failed to download notice:', err);
+      alert(err instanceof Error ? err.message : '報酬決定通知書のダウンロードに失敗しました');
+    } finally {
+      setDownloadLoading(null);
+    }
+  };
+
+  // 請求書をダウンロード
+  const handleDownloadInvoice = async (year: number, month: number) => {
+    try {
+      setDownloadLoading(`invoice-${year}-${month}`);
+      await downloadWageInvoice(year, month);
+    } catch (err) {
+      console.error('Failed to download invoice:', err);
+      alert(err instanceof Error ? err.message : '請求書のダウンロードに失敗しました');
+    } finally {
+      setDownloadLoading(null);
+    }
+  };
+
+  // 全履歴を表示
+  const handleShowAllHistory = async () => {
+    try {
+      setHistoryLoading(true);
+      const historyData = await getWageHistory(true);
+      setAllHistory(historyData.history);
+      setShowHistoryModal(true);
+    } catch (err) {
+      console.error('Failed to fetch all history:', err);
+      alert(err instanceof Error ? err.message : '履歴の取得に失敗しました');
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  // 今月の履歴があるかチェック
+  const { year: currentYear, month: currentMonth } = getCurrentYearMonth();
+  const currentMonthWage = wageHistory.find(
+    (w) => w.year === currentYear && w.month === currentMonth
+  );
 
   // ローディング中の表示
   if (loading) {
@@ -219,6 +338,164 @@ export default function RewardsPage() {
         </p>
       </div>
 
+      {/* 今月の工賃確認セクション */}
+      <Card className="border-blue-200 bg-blue-50/50">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Calendar className="h-5 w-5 text-blue-600" />
+            {currentYear}年{currentMonth}月の工賃
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {currentMonthWage ? (
+            // 既に計算済みの場合
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-2xl font-bold">{formatCurrency(currentMonthWage.totalAmount)}</p>
+                  <p className="text-sm text-muted-foreground">
+                    対象: {currentMonthWage.memberCount}名
+                  </p>
+                </div>
+                <Badge
+                  variant={
+                    currentMonthWage.status === 'CONFIRMED'
+                      ? 'warning'
+                      : currentMonthWage.status === 'PAID'
+                      ? 'success'
+                      : 'default'
+                  }
+                >
+                  {currentMonthWage.status === 'CONFIRMED'
+                    ? '確定済み'
+                    : currentMonthWage.status === 'PAID'
+                    ? '支払済み'
+                    : '計算中'}
+                </Badge>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleDownloadNotice(currentYear, currentMonth)}
+                  disabled={downloadLoading === `notice-${currentYear}-${currentMonth}`}
+                >
+                  {downloadLoading === `notice-${currentYear}-${currentMonth}` ? (
+                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  ) : (
+                    <FileText className="h-4 w-4 mr-1" />
+                  )}
+                  報酬決定通知書
+                </Button>
+                {(currentMonthWage.status === 'CONFIRMED' || currentMonthWage.status === 'PAID') && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleDownloadInvoice(currentYear, currentMonth)}
+                    disabled={downloadLoading === `invoice-${currentYear}-${currentMonth}`}
+                  >
+                    {downloadLoading === `invoice-${currentYear}-${currentMonth}` ? (
+                      <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                    ) : (
+                      <Download className="h-4 w-4 mr-1" />
+                    )}
+                    請求書
+                  </Button>
+                )}
+                {currentMonthWage.status === 'CALCULATING' && (
+                  <Button
+                    size="sm"
+                    onClick={handleConfirmWage}
+                    disabled={confirmLoading}
+                  >
+                    {confirmLoading ? (
+                      <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                    ) : (
+                      <CheckCircle className="h-4 w-4 mr-1" />
+                    )}
+                    工賃を確定
+                  </Button>
+                )}
+              </div>
+            </div>
+          ) : showPreview && previewData ? (
+            // プレビュー表示中
+            <div className="space-y-4">
+              <div className="p-4 bg-white rounded-lg border">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">今月の工賃合計</p>
+                    <p className="text-2xl font-bold">{formatCurrency(previewData.totalAmount)}</p>
+                  </div>
+                  <Badge variant="default">プレビュー</Badge>
+                </div>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span>前月からの繰越</span>
+                    <span>{formatCurrency(previewData.carryover.previousCarryover)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>翌月への繰越</span>
+                    <span>-{formatCurrency(previewData.carryover.nextCarryover)}</span>
+                  </div>
+                  <div className="flex justify-between font-bold border-t pt-2">
+                    <span>お支払い金額</span>
+                    <span>{formatCurrency(previewData.carryover.paymentAmount)}</span>
+                  </div>
+                </div>
+                <div className="mt-4 pt-4 border-t">
+                  <p className="text-sm font-medium mb-2">利用者別内訳</p>
+                  <div className="space-y-2">
+                    {previewData.members.map((member) => (
+                      <div key={member.userId} className="flex justify-between text-sm">
+                        <span>{member.userName} ({member.validPlayCount}回)</span>
+                        <span>{formatCurrency(member.totalWage)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowPreview(false)}
+                >
+                  閉じる
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={handleConfirmWage}
+                  disabled={confirmLoading}
+                >
+                  {confirmLoading ? (
+                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  ) : (
+                    <CheckCircle className="h-4 w-4 mr-1" />
+                  )}
+                  工賃を確定
+                </Button>
+              </div>
+            </div>
+          ) : (
+            // プレビュー前
+            <div className="text-center py-4">
+              <p className="text-muted-foreground mb-4">
+                今月の工賃はまだ計算されていません
+              </p>
+              <Button onClick={handleShowPreview} disabled={previewLoading}>
+                {previewLoading ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Eye className="h-4 w-4 mr-2" />
+                )}
+                今月の工賃を確認
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Stats & Wage Phase - 2 Column Layout */}
       <div className="grid gap-6 md:grid-cols-2">
         {/* Left: Stats Cards */}
@@ -226,7 +503,7 @@ export default function RewardsPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
-                {getCurrentYearMonth()}分の工賃
+                {getPreviousYearMonth()}分の工賃
               </CardTitle>
               <DollarSign className="h-4 w-4 text-green-600" />
             </CardHeader>
@@ -235,7 +512,7 @@ export default function RewardsPage() {
                 {previousMonthWage !== null ? formatCurrency(previousMonthWage) : 'データなし'}
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                {previousMonthWage !== null ? '確定済み・振込予定日: 12/25' : '前月のデータがありません'}
+                {previousMonthWage !== null ? '確定済み' : '前月のデータがありません'}
               </p>
             </CardContent>
           </Card>
@@ -342,6 +619,7 @@ export default function RewardsPage() {
                   const formattedPaymentDate = record.paymentDate
                     ? new Date(record.paymentDate).toLocaleDateString('ja-JP')
                     : '未定';
+                  const isConfirmedOrPaid = record.status === 'CONFIRMED' || record.status === 'PAID';
 
                   return (
                     <div
@@ -356,7 +634,7 @@ export default function RewardsPage() {
                           ) : record.status === "PAID" ? (
                             <Badge variant="success">支払済み</Badge>
                           ) : (
-                            <Badge variant="secondary">計算中</Badge>
+                            <Badge variant="default">計算中</Badge>
                           )}
                         </div>
                         <p className="text-sm text-muted-foreground mt-1">
@@ -374,24 +652,51 @@ export default function RewardsPage() {
                           variant="outline"
                           size="sm"
                           className="gap-1 text-xs h-8"
-                          onClick={() => handleDownloadNotice(monthLabel)}
+                          onClick={() => handleDownloadNotice(record.year, record.month)}
+                          disabled={downloadLoading === `notice-${record.year}-${record.month}`}
                         >
-                          <FileText className="h-3 w-3" />
+                          {downloadLoading === `notice-${record.year}-${record.month}` ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <FileText className="h-3 w-3" />
+                          )}
                           報酬決定通知書
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
                           className="gap-1 text-xs h-8"
-                          onClick={() => handleDownloadInvoice(monthLabel)}
+                          onClick={() => handleDownloadInvoice(record.year, record.month)}
+                          disabled={!isConfirmedOrPaid || downloadLoading === `invoice-${record.year}-${record.month}`}
+                          title={!isConfirmedOrPaid ? '工賃確定後にダウンロードできます' : ''}
                         >
-                          <Download className="h-3 w-3" />
+                          {downloadLoading === `invoice-${record.year}-${record.month}` ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <Download className="h-3 w-3" />
+                          )}
                           請求書
                         </Button>
                       </div>
                     </div>
                   );
                 })}
+                {/* もっと見るボタン */}
+                {hasMoreHistory && (
+                  <Button
+                    variant="ghost"
+                    className="w-full mt-2"
+                    onClick={handleShowAllHistory}
+                    disabled={historyLoading}
+                  >
+                    {historyLoading ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4 mr-2" />
+                    )}
+                    もっと見る
+                  </Button>
+                )}
               </div>
             )}
           </CardContent>
@@ -400,7 +705,7 @@ export default function RewardsPage() {
         {/* Member Breakdown */}
         <Card>
           <CardHeader>
-            <CardTitle>{getCurrentYearMonth()}分の利用者別内訳</CardTitle>
+            <CardTitle>{getPreviousYearMonth()}分の利用者別内訳</CardTitle>
           </CardHeader>
           <CardContent>
             {memberWages.length === 0 ? (
@@ -462,6 +767,108 @@ export default function RewardsPage() {
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* 履歴一覧モーダル */}
+      {showHistoryModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[80vh] flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b">
+              <h2 className="text-lg font-semibold">工賃履歴一覧</h2>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowHistoryModal(false)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="flex-1 overflow-auto p-4">
+              <table className="w-full">
+                <thead className="bg-gray-50 sticky top-0">
+                  <tr>
+                    <th className="text-left p-3 font-medium text-sm">年月</th>
+                    <th className="text-right p-3 font-medium text-sm">金額</th>
+                    <th className="text-center p-3 font-medium text-sm">対象人数</th>
+                    <th className="text-center p-3 font-medium text-sm">ステータス</th>
+                    <th className="text-center p-3 font-medium text-sm">振込日</th>
+                    <th className="text-center p-3 font-medium text-sm">操作</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {allHistory.map((record) => {
+                    const isConfirmedOrPaid = record.status === 'CONFIRMED' || record.status === 'PAID';
+                    return (
+                      <tr key={record.id} className="hover:bg-gray-50">
+                        <td className="p-3 font-medium">
+                          {record.year}年{record.month}月
+                        </td>
+                        <td className="p-3 text-right font-bold">
+                          {formatCurrency(record.totalAmount)}
+                        </td>
+                        <td className="p-3 text-center text-sm text-muted-foreground">
+                          {record.memberCount}名
+                        </td>
+                        <td className="p-3 text-center">
+                          {record.status === "CONFIRMED" ? (
+                            <Badge variant="warning">確定済み</Badge>
+                          ) : record.status === "PAID" ? (
+                            <Badge variant="success">支払済み</Badge>
+                          ) : (
+                            <Badge variant="default">計算中</Badge>
+                          )}
+                        </td>
+                        <td className="p-3 text-center text-sm text-muted-foreground">
+                          {record.paymentDate
+                            ? new Date(record.paymentDate).toLocaleDateString('ja-JP')
+                            : '-'}
+                        </td>
+                        <td className="p-3">
+                          <div className="flex justify-center gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 px-2 text-xs"
+                              onClick={() => handleDownloadNotice(record.year, record.month)}
+                              disabled={downloadLoading === `notice-${record.year}-${record.month}`}
+                            >
+                              {downloadLoading === `notice-${record.year}-${record.month}` ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              ) : (
+                                <FileText className="h-3 w-3" />
+                              )}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 px-2 text-xs"
+                              onClick={() => handleDownloadInvoice(record.year, record.month)}
+                              disabled={!isConfirmedOrPaid || downloadLoading === `invoice-${record.year}-${record.month}`}
+                            >
+                              {downloadLoading === `invoice-${record.year}-${record.month}` ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              ) : (
+                                <Download className="h-3 w-3" />
+                              )}
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+              {allHistory.length === 0 && (
+                <p className="text-center text-muted-foreground py-8">
+                  履歴がありません
+                </p>
+              )}
+            </div>
+            <div className="p-4 border-t text-sm text-muted-foreground text-center">
+              全{allHistory.length}件
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
