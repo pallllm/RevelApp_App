@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest } from 'next/server';
-import { verifyWordPressToken, extractTokenFromHeader } from '@/lib/auth/wordpress';
+import { verifyAuth } from '@/lib/auth/verify';
 import { prisma } from '@/lib/prisma';
 import { successResponse, errorResponse } from '@/lib/utils/response';
 import { readGamePlayRecords, getAvailableMonths } from '@/lib/google/spreadsheet-reader';
@@ -12,9 +12,8 @@ import { readGamePlayRecords, getAvailableMonths } from '@/lib/google/spreadshee
  */
 export async function GET(request: NextRequest) {
   try {
-    // WordPress JWT認証
-    const authHeader = extractTokenFromHeader(request.headers);
-    const user = await verifyWordPressToken(authHeader);
+    // JWT認証
+    const user = await verifyAuth(request);
 
     // URLパラメータから取得
     const { searchParams } = new URL(request.url);

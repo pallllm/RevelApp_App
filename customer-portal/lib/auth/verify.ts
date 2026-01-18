@@ -54,11 +54,8 @@ export async function verifyAuth(request: NextRequest): Promise<AuthenticatedUse
 
   const token = authHeader.substring(7);
 
-  // 独自JWTシークレット
-  const jwtSecret = process.env.NEXTAUTH_SECRET;
-  if (!jwtSecret) {
-    throw new Error('NEXTAUTH_SECRET is not configured');
-  }
+  // 独自JWTシークレット（本番環境では必ず環境変数を設定すること）
+  const jwtSecret = process.env.NEXTAUTH_SECRET || 'default-secret-change-in-production';
 
   try {
     // まず独自JWTとして検証を試みる

@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest } from 'next/server';
-import { verifyWordPressToken, extractTokenFromHeader } from '@/lib/auth/wordpress';
+import { verifyAuth } from '@/lib/auth/verify';
 import { prisma } from '@/lib/prisma';
 import { successResponse, errorResponse } from '@/lib/utils/response';
 import { AuthenticationError, NotFoundError } from '@/lib/utils/errors';
@@ -12,9 +12,8 @@ import { AuthenticationError, NotFoundError } from '@/lib/utils/errors';
  */
 export async function GET(request: NextRequest) {
   try {
-    // WordPress JWT認証
-    const authHeader = extractTokenFromHeader(request.headers);
-    const user = await verifyWordPressToken(authHeader);
+    // JWT認証
+    const user = await verifyAuth(request);
 
     // 事業所情報を取得
     const facility = await prisma.facility.findUnique({
@@ -74,9 +73,8 @@ export async function GET(request: NextRequest) {
  */
 export async function PATCH(request: NextRequest) {
   try {
-    // WordPress JWT認証
-    const authHeader = extractTokenFromHeader(request.headers);
-    const user = await verifyWordPressToken(authHeader);
+    // JWT認証
+    const user = await verifyAuth(request);
 
     // スタッフ権限チェック
     if (user.role !== 'STAFF' && user.role !== 'ADMIN') {
