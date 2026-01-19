@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/contexts/auth-context";
@@ -66,8 +67,16 @@ export function Sidebar() {
   return (
     <div className="flex h-full w-64 flex-col bg-white border-r">
       {/* Logo */}
-      <div className="flex h-16 items-center border-b px-6">
-        <h1 className="text-2xl font-bold text-primary">RevelApp</h1>
+      <div className="flex h-16 items-center border-b px-4">
+        <Link href="/app" className="flex items-center">
+          <Image
+            src="/images/revelapp-logo-horizontal.png"
+            alt="RevelApp"
+            width={160}
+            height={49}
+            priority
+          />
+        </Link>
       </div>
 
       {/* Navigation */}
