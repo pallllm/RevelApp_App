@@ -13,7 +13,6 @@ import {
   FileText,
   LifeBuoy,
   LogOut,
-  Gamepad2,
   FileEdit,
 } from "lucide-react";
 
@@ -27,11 +26,6 @@ const navigation = [
     name: "利用者管理",
     href: "/app/members",
     icon: Users,
-  },
-  {
-    name: "ゲーム管理",
-    href: "/app/games",
-    icon: Gamepad2,
   },
   {
     name: "体調グラフ",
