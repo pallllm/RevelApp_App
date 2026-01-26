@@ -10,8 +10,7 @@ export const prisma =
     log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
   });
 
-if (process.env.NODE_ENV !== 'production') {
-  globalForPrisma.prisma = prisma;
-}
+// 本番環境でも開発環境でもシングルトンを使用（サーバーレス環境での接続プール枯渇を防ぐ）
+globalForPrisma.prisma = prisma;
 
 export default prisma;
