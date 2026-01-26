@@ -5,9 +5,11 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AlertCircle } from "lucide-react";
+import { useAuth } from "@/lib/contexts/auth-context";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -33,9 +35,8 @@ export default function LoginPage() {
         throw new Error(data.error || "ログインに失敗しました");
       }
 
-      // トークンをローカルストレージに保存
-      localStorage.setItem("auth_token", data.token);
-      localStorage.setItem("user", JSON.stringify(data.user));
+      // AuthContextを通じてログイン状態を更新
+      login(data.token, data.user);
 
       // ダッシュボードへリダイレクト
       router.push("/app");
