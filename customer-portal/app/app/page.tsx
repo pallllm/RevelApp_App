@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { StatCard } from "@/components/ui/stat-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { SkeletonHomePage } from "@/components/ui/skeleton";
+import { useToast } from "@/components/ui/toast";
 import {
   Users,
   FileEdit,
@@ -14,6 +16,7 @@ import {
   ChevronDown,
   ChevronRight,
   TrendingUp,
+  RefreshCw,
 } from "lucide-react";
 import { getFacility, getFacilityStats, formatPlanType, formatWagePhase, getCalendarEvents } from "@/lib/api/client";
 
@@ -49,10 +52,6 @@ const announcements = [
   },
 ];
 
-// Important dates for calendar
-const importantDates = [
-  { date: 15, title: "変更申請締切", type: "deadline" as const },
-];
 
 // Wage phase data - soft, professional colors
 const wagePhases = [
@@ -229,35 +228,21 @@ export default function HomePage() {
   const getDateInfo = (day: number | null) => {
     if (!day) return null;
 
-    // 重要な日付（システム定義）
-    const importantDate = importantDates.find(d => d.date === day);
-
     // Googleカレンダーのイベント
     const googleEvents = calendarEvents[day] || [];
 
     return {
-      importantDate,
       googleEvents,
-      hasEvents: !!importantDate || googleEvents.length > 0,
+      hasEvents: googleEvents.length > 0,
     };
   };
 
-  // ローディング中の表示
+  // ローディング中はスケルトンを表示
   if (loading) {
-    return (
-      <div className="space-y-6">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900">ホーム</h1>
-          <p className="text-gray-600 mt-1">施設の運営状況を一目で確認できます</p>
-        </div>
-        <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-        </div>
-      </div>
-    );
+    return <SkeletonHomePage />;
   }
 
-  // エラー時の表示
+  // エラー時の表示（リトライ機能付き）
   if (error) {
     return (
       <div className="space-y-6">
@@ -267,12 +252,21 @@ export default function HomePage() {
         </div>
         <Card className="border-red-200 bg-red-50">
           <CardContent className="pt-6">
-            <div className="flex items-center gap-3 text-red-700">
-              <AlertCircle className="h-5 w-5" />
-              <div>
-                <p className="font-semibold">データの読み込みに失敗しました</p>
-                <p className="text-sm mt-1">{error}</p>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3 text-red-700">
+                <AlertCircle className="h-5 w-5" />
+                <div>
+                  <p className="font-semibold">データの読み込みに失敗しました</p>
+                  <p className="text-sm mt-1">{error}</p>
+                </div>
               </div>
+              <button
+                onClick={() => window.location.reload()}
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-700 bg-red-100 hover:bg-red-200 rounded-lg transition-colors"
+              >
+                <RefreshCw className="h-4 w-4" />
+                再読み込み
+              </button>
             </div>
           </CardContent>
         </Card>
@@ -521,17 +515,22 @@ export default function HomePage() {
                     className="aspect-square flex items-center justify-center"
                   >
                     {day && (
-                      <button
-                        className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium transition-all ${
-                          isTodayDate
-                            ? "bg-gradient-to-br from-blue-500 to-cyan-500 text-white shadow-lg ring-2 ring-blue-300"
-                            : dateInfo?.hasEvents
-                            ? "bg-gradient-to-br from-purple-400 to-pink-400 text-white shadow-md hover:shadow-lg"
-                            : "text-gray-700 hover:bg-gray-100"
-                        }`}
-                      >
-                        {day}
-                      </button>
+                      <div className="relative">
+                        {isTodayDate && (
+                          <div className="absolute inset-0 w-10 h-10 rounded-full bg-red-500 animate-ping opacity-30" />
+                        )}
+                        <button
+                          className={`relative w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
+                            isTodayDate
+                              ? "bg-red-500 text-white shadow-lg ring-4 ring-red-200"
+                              : dateInfo?.hasEvents
+                              ? "bg-gradient-to-br from-purple-400 to-pink-400 text-white shadow-md hover:shadow-lg"
+                              : "text-gray-700 hover:bg-gray-100"
+                          }`}
+                        >
+                          {day}
+                        </button>
+                      </div>
                     )}
                   </div>
                 );
@@ -547,26 +546,6 @@ export default function HomePage() {
                 </button>
               </div>
               <div className="space-y-3">
-                {/* 重要な日付（システム定義） */}
-                {importantDates.map((item, index) => (
-                  <div
-                    key={`important-${index}`}
-                    className="flex items-start gap-3 p-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors"
-                  >
-                    <div className="flex-shrink-0 px-3 py-1 rounded-full text-xs font-semibold text-white bg-gradient-to-r from-pink-400 to-pink-500">
-                      締切
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-gray-800 mb-0.5">
-                        {item.title}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {selectedMonth}月{item.date}日
-                      </p>
-                    </div>
-                  </div>
-                ))}
-
                 {/* Googleカレンダーのイベント */}
                 {Object.entries(calendarEvents).flatMap(([day, events]) =>
                   events.map((event, idx) => (
@@ -596,7 +575,7 @@ export default function HomePage() {
                 )}
 
                 {/* イベントがない場合 */}
-                {importantDates.length === 0 && Object.keys(calendarEvents).length === 0 && (
+                {Object.keys(calendarEvents).length === 0 && (
                   <p className="text-center text-sm text-gray-400 py-4">
                     今月の予定はありません
                   </p>

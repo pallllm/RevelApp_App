@@ -125,9 +125,11 @@ export default function RequestsPage() {
         setLoading(true);
         setError(null);
 
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem('auth_token');
         if (!token) {
-          throw new Error('認証トークンが見つかりません');
+          // トークンがない場合は空の履歴として扱う
+          setRequests([]);
+          return;
         }
 
         const response = await fetch('/api/change-requests', {
@@ -137,14 +139,17 @@ export default function RequestsPage() {
         });
 
         if (!response.ok) {
-          throw new Error('申請一覧の取得に失敗しました');
+          // APIエラーの場合も空の履歴として扱う
+          setRequests([]);
+          return;
         }
 
         const data = await response.json();
-        setRequests(data.changeRequests);
+        setRequests(data.changeRequests || []);
       } catch (err) {
         console.error('Failed to fetch requests:', err);
-        setError(err instanceof Error ? err.message : '申請一覧の取得に失敗しました');
+        // エラー時は空の履歴として表示
+        setRequests([]);
       } finally {
         setLoading(false);
       }
@@ -171,7 +176,7 @@ export default function RequestsPage() {
   // 申請を送信する共通関数
   const submitRequest = async (requestType: string, requestData: any, notes?: string) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth_token');
       if (!token) {
         throw new Error('認証トークンが見つかりません');
       }
